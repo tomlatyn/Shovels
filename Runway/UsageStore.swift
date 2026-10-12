@@ -53,13 +53,13 @@ final class UsageStore {
         refreshNow()
     }
 
-    /// Monochrome menu bar text, such as "CC 47%" or "CC ?" when there's no fresh reading.
-    var menuBarTitle: String {
+    /// Menu bar text: the 5-hour percentage, or "?" when there's no fresh reading.
+    var menuBarText: String {
         guard let snapshot, !snapshot.isStale(at: now),
               let fiveHour = snapshot.windows.first(where: { $0.label == "5H" }),
               let percent = fiveHour.usedPercent else {
-            return "CC ?"
+            return "?"
         }
-        return "CC \(Int(percent))%"
+        return "\(Int(percent))%"
     }
 }

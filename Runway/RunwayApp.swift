@@ -12,8 +12,7 @@ struct RunwayApp: App {
         MenuBarExtra {
             DashboardView(store: store)
         } label: {
-            Text(store.menuBarTitle)
-                .font(Retro.body(16))
+            MenuBarLabel(store: store)
         }
         .menuBarExtraStyle(.window)
     }
