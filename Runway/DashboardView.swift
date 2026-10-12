@@ -21,6 +21,7 @@ struct DashboardView: View {
         .font(Retro.body(20))
         .padding(14)
         .frame(width: 372, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Palette.panel)
     }
 
@@ -45,7 +46,12 @@ struct DashboardView: View {
 
 struct ClaudeCard: View {
     let store: UsageStore
-    @State private var confirmingConnect = false
+    @State private var confirmingConnect: Bool
+
+    init(store: UsageStore, startConfirming: Bool = false) {
+        self.store = store
+        _confirmingConnect = State(initialValue: startConfirming)
+    }
 
     private var snapshot: ProviderSnapshot? { store.snapshot }
     private var hasLimits: Bool { !(snapshot?.windows.isEmpty ?? true) }
@@ -92,6 +98,8 @@ struct ClaudeCard: View {
             }
         }
         .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
         .overlay(Rectangle().stroke(Palette.border, lineWidth: 1))
     }
 
@@ -99,9 +107,10 @@ struct ClaudeCard: View {
         switch store.setupStatus {
         case .notConfigured:
             if confirmingConnect {
-                Text("Runway adds one line to Claude Code's settings so it can read your usage. Your current settings are saved first. You can disconnect at any time.")
+                Text("Runway adds one line to Claude Code's settings. Your settings are backed up first. You can disconnect anytime.")
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.phosphor)
+                    .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     TerminalButton(title: "CONNECT") {
                         store.connect()
@@ -112,9 +121,10 @@ struct ClaudeCard: View {
             } else {
                 Text("Not connected")
                     .foregroundStyle(Palette.phosphor)
-                Text("Connect to see your 5-hour and weekly usage here.")
+                Text("Connect to see your usage here.")
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 TerminalButton(title: "CONNECT CLAUDE CODE") { confirmingConnect = true }
             }
         case .installed:
@@ -123,13 +133,12 @@ struct ClaudeCard: View {
             Text("Usage appears after Claude's next reply.")
                 .font(Retro.body(17))
                 .foregroundStyle(Palette.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         case .otherStatusLineSet:
-            Text("Claude Code's status line is used by another tool.")
+            Text("Claude Code already uses a status line from another tool. Runway can't connect without replacing it.")
                 .font(Retro.body(17))
                 .foregroundStyle(Palette.secondary)
-            Text("Runway can't connect without replacing it, so it left it alone.")
-                .font(Retro.body(17))
-                .foregroundStyle(Palette.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
