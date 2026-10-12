@@ -1,27 +1,19 @@
 import Foundation
 
-enum ProviderID: String, CaseIterable, Sendable {
+enum ProviderID: Sendable {
     case claudeCode
-    case codex
 
     var displayName: String {
         switch self {
         case .claudeCode: "CLAUDE CODE"
-        case .codex: "CODEX"
         }
     }
 
     var shortName: String {
         switch self {
         case .claudeCode: "CC"
-        case .codex: "CX"
         }
     }
-}
-
-enum SourceKind: Sendable {
-    case localFile
-    case statusLineHelper
 }
 
 struct UsageWindow: Sendable, Equatable {
@@ -34,13 +26,14 @@ struct UsageWindow: Sendable, Equatable {
 
 struct ProviderSnapshot: Sendable, Equatable {
     var provider: ProviderID
-    var plan: String?
+    /// Empty until the status line helper has reported limits.
     var windows: [UsageWindow]
-    var asOf: Date
-    var source: SourceKind
+    /// When the helper last wrote the limits. nil when there are none.
+    var asOf: Date?
+    /// Input plus output tokens over the last five hours, from local logs.
+    var tokensLast5h: Int?
 
-    /// A snapshot is stale once any of its windows has reset, because the
-    /// percentage it holds belongs to the previous window.
+    /// A window that has reset means the percentage belongs to the previous window.
     func isStale(at now: Date) -> Bool {
         windows.contains { ($0.resetsAt ?? .distantFuture) <= now }
     }

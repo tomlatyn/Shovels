@@ -58,16 +58,18 @@ Bundle ID: `com.tomaslatyn.runway`.
 
 ## 3. Features
 
-**MVP: Codex and Claude Code only**
+**MVP: Claude Code only**
 - Menu bar item with the pinned providers, tightest limit first, monochrome.
 - Dropdown dashboard with one card per provider: 5-hour and weekly windows, reset countdown, plan tag, source tag, and "as of" time.
 - LIVE / STALE / NO SOURCE states, and the Phosphor theme.
 - Refresh on file change, a 60-second poll, and a manual refresh button.
 - A simple per-provider on/off toggle. No API keys in the MVP.
 - Launch at login (`SMAppService`).
-- Claude Code limit percentages appear only if the status line spike passes. Until then its card shows token totals and "limits unavailable".
+- Claude Code limits come from the status line helper, which is confirmed on this Mac. The card also shows input and output tokens over the last five hours, from local logs.
+- Enabling the helper is an explicit step. Runway shows the exact change to `~/.claude/settings.json`, backs the file up, and writes only after you confirm. If you already have a status line, Runway doesn't touch it.
 
 **Later**, roughly in this order
+- Codex, from its local rollout files. The source is confirmed, so it's the first addition after the MVP.
 - Alerts: 80% and 95% notifications, then reset notifications.
 - API spend: Anthropic and OpenAI cost and usage APIs, shown in dollars. Keys go in the Keychain.
 - Cursor, opt-in.

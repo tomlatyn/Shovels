@@ -1,8 +1,7 @@
 import SwiftUI
 
 struct DashboardView: View {
-    let snapshots: [ProviderSnapshot]
-    let now: Date
+    let store: UsageStore
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -11,12 +10,10 @@ struct DashboardView: View {
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundStyle(Palette.phosphor)
                 Spacer()
-                Text(now, format: .dateTime.hour().minute())
+                Text(store.now, format: .dateTime.hour().minute())
                     .foregroundStyle(Palette.secondary)
             }
-            ForEach(snapshots, id: \.provider) { snapshot in
-                ProviderCard(snapshot: snapshot, now: now)
-            }
+            ClaudeCard(store: store)
         }
         .font(.system(size: 13, design: .monospaced))
         .padding(14)
@@ -25,43 +22,101 @@ struct DashboardView: View {
     }
 }
 
-struct ProviderCard: View {
-    let snapshot: ProviderSnapshot
-    let now: Date
+struct ClaudeCard: View {
+    let store: UsageStore
+    @State private var previewingSetup = false
 
-    private var stale: Bool { snapshot.isStale(at: now) }
+    private var snapshot: ProviderSnapshot? { store.snapshot }
+    private var hasLimits: Bool { !(snapshot?.windows.isEmpty ?? true) }
+    private var stale: Bool { snapshot?.isStale(at: store.now) ?? false }
 
     /// Stale cards drop their provider color, so old data doesn't look live.
     private var accent: Color {
-        stale ? Palette.secondary : Palette.accent(for: snapshot.provider)
+        stale ? Palette.secondary : Palette.accent(for: .claudeCode)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(snapshot.provider.displayName)
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundStyle(accent)
-                Spacer()
-                Text(snapshot.plan ?? "")
+            Text(ProviderID.claudeCode.displayName)
+                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .foregroundStyle(accent)
+
+            if let snapshot, hasLimits {
+                ForEach(snapshot.windows, id: \.label) { window in
+                    WindowRow(window: window, accent: accent, now: store.now)
+                }
+                if let asOf = snapshot.asOf {
+                    Text("src statusline · as of \(asOf.formatted(.relative(presentation: .named)))")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(Palette.secondary)
+                }
+            } else {
+                setupBlock
+            }
+
+            if let tokens = snapshot?.tokensLast5h {
+                Text("5H tokens in+out \(tokens.formatted(.number.notation(.compactName)))")
+                    .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(Palette.secondary)
             }
-            ForEach(snapshot.windows, id: \.label) { window in
-                WindowRow(window: window, accent: accent, now: now)
-            }
-            Text("src \(sourceName) · as of \(snapshot.asOf.formatted(.relative(presentation: .named)))")
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(Palette.secondary)
         }
         .padding(10)
         .overlay(Rectangle().stroke(Palette.border, lineWidth: 1))
     }
 
-    private var sourceName: String {
-        switch snapshot.source {
-        case .localFile: "local file"
-        case .statusLineHelper: "statusline"
+    @ViewBuilder private var setupBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            switch store.setupStatus {
+            case .notConfigured:
+                Text("limits unavailable")
+                    .foregroundStyle(Palette.secondary)
+                if previewingSetup {
+                    Text("Runway will set this in ~/.claude/settings.json. Your current file is backed up first.")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(Palette.secondary)
+                    Text(ClaudeSetup.helperCommand)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(Palette.phosphor)
+                    HStack(spacing: 8) {
+                        TerminalButton(title: "WRITE SETTINGS") {
+                            store.enableLimits()
+                            previewingSetup = false
+                        }
+                        TerminalButton(title: "CANCEL") { previewingSetup = false }
+                    }
+                } else {
+                    TerminalButton(title: "ENABLE LIMITS") { previewingSetup = true }
+                }
+                if let error = store.setupError {
+                    Text(error)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(Palette.alert)
+                }
+            case .installed:
+                Text("waiting for the first Claude response")
+                    .foregroundStyle(Palette.secondary)
+            case .otherStatusLineSet:
+                Text("you already have a status line, so Runway leaves it alone")
+                    .foregroundStyle(Palette.secondary)
+            }
         }
+    }
+}
+
+struct TerminalButton: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 14, design: .monospaced))
+                .foregroundStyle(Palette.phosphor)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
+                .overlay(Rectangle().stroke(Palette.phosphor, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -105,7 +160,7 @@ struct WindowRow: View {
 
     private var resetLabel: String {
         guard let resetsAt = window.resetsAt else { return "reset time unknown" }
-        if resetsAt <= now { return "window reset, waiting for next run" }
+        if resetsAt <= now { return "window reset, waiting for next response" }
         return "resets " + resetsAt.formatted(.relative(presentation: .named))
     }
 }

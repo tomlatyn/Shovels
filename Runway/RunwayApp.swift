@@ -6,7 +6,7 @@ struct RunwayApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            DashboardView(snapshots: store.snapshots, now: .now)
+            DashboardView(store: store)
         } label: {
             Text(store.menuBarTitle)
                 .font(.system(size: 12, design: .monospaced))
