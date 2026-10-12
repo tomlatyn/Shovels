@@ -1,10 +1,12 @@
-# Phosphor: plan
+# Redline: plan
 
-A menu bar utility that tracks subscription usage and limits for Claude Code, Codex, Antigravity and Cursor, shown in a retro CRT-style dashboard.
+A menu bar utility that tracks subscription usage and limits for Claude Code, Codex, Antigravity and Cursor, shown in a retro CRT-style dashboard. The visual theme is still called Phosphor.
 
 Design mockup (canvas): https://claude.ai/artifact/CaPsAUSdq5wsAMGfGvAkEv (private; only the owner can open it until it is shared from the page's Share menu)
 
 ## 1. Name
+
+**Chosen (tentative): Redline.** It fits the palette: red is reserved for limits at 90% or more, so the name matches the one alert color. Check GitHub and the App Store for existing apps with this name before the public repo goes live. Phosphor stays as the theme name.
 
 | Name | Why | Note |
 |---|---|---|
@@ -14,7 +16,7 @@ Design mockup (canvas): https://claude.ai/artifact/CaPsAUSdq5wsAMGfGvAkEv (priva
 | Quotabar | Describes exactly what it is. | Plain, less retro. |
 | Ration | Fits the "limits" idea. | Slightly negative tone. |
 
-Bundle ID: `com.<you>.phosphor` as a placeholder. Set it once the name and Apple developer account are settled.
+Bundle ID: `com.<you>.redline` as a placeholder. Set it before the first public release.
 
 ## 2. Design direction: Phosphor theme
 
@@ -56,21 +58,23 @@ Bundle ID: `com.<you>.phosphor` as a placeholder. Set it once the name and Apple
 
 ## 3. Features
 
-**MVP**
-- Menu bar item showing the pinned providers, with the tightest limit first.
+**MVP: Codex and Claude Code only**
+- Menu bar item with the pinned providers, tightest limit first, monochrome.
 - Dropdown dashboard with one card per provider: 5-hour and weekly windows, reset countdown, plan tag, source tag, and "as of" time.
-- LIVE / STALE / NO SOURCE states.
-- Sources screen: choose a data source per provider. Optional API-spend keys, stored in the Keychain.
-- Notifications at 80% and 95%.
+- LIVE / STALE / NO SOURCE states, and the Phosphor theme.
 - Refresh on file change, a 60-second poll, and a manual refresh button.
+- A simple per-provider on/off toggle. No API keys in the MVP.
 - Launch at login (`SMAppService`).
+- Claude Code limit percentages appear only if the status line spike passes. Until then its card shows token totals and "limits unavailable".
 
-**Later**
-- Usage history sparklines, from snapshots stored in Application Support.
-- Daily token totals from the Claude Code and Codex logs.
-- Antigravity support once a source is confirmed.
-- Themes.
-- Optional CRT sound on threshold alerts.
+**Later**, roughly in this order
+- Alerts: 80% and 95% notifications, then reset notifications.
+- API spend: Anthropic and OpenAI cost and usage APIs, shown in dollars. Keys go in the Keychain.
+- Cursor, opt-in.
+- Antigravity, once a spike confirms a source.
+- Usage history sparklines and daily token totals.
+- More themes.
+- Optional CRT sound on alerts.
 
 ## 4. Data sources (checked on this Mac)
 
@@ -97,7 +101,8 @@ The app cannot get subscription limits from API keys for most of these providers
 - **Secrets.** Every key and token the app stores goes in the Keychain. Cursor's token is read live, in memory only, and is never copied or logged.
 - **Consent.** Anything that reads another app's credentials, or edits another app's settings, is off by default, with an explicit toggle and a preview of the change.
 - **Freshness.** Local data is a snapshot from the last session. Every card shows an "as of" time. When `resets_at` has passed, the window shows as STALE or reset, not the old percentage.
-- **Minimum macOS: 14 (Sonoma).** Recommended, since it allows `@Observable` and a current SwiftUI `MenuBarExtra`. Confirm this.
+- **Minimum macOS: 14 (Sonoma).** `@Observable` and the current `MenuBarExtra` behavior are there, so the code needs no older-version workarounds. There is no real usage data yet, because the app is new. This is a choice, not a measurement. Revisit it if a user on an older release reports a problem.
+- **Distribution: personal use, plus the public GitHub repo. Not notarized.** Ad-hoc or local signing is still required, because Apple Silicon won't run unsigned code. The README has to explain the first-launch step (right-click, Open, or removing the quarantine attribute). Any release ships as a zip with a checksum.
 - **No telemetry.** The app calls only the provider endpoints the user has chosen.
 - **Stored state.** Snapshots and settings go in `~/Library/Application Support/Phosphor/`. Read logs from their tail. Never load a whole multi-megabyte JSONL into memory.
 
@@ -158,9 +163,10 @@ struct ProviderSnapshot: Sendable {
 
 ## 9. Open decisions
 
-1. **Name.** Phosphor, or one of the alternatives above?
-2. **Minimum macOS.** 14 (Sonoma), or lower?
-3. **Distribution.** Personal use only, or shared with others? This decides whether notarization is needed.
+1. **Name.** Redline (tentative). Check for existing apps before the repo goes public.
+2. **Minimum macOS.** Decided: 14 (Sonoma).
+3. **Distribution.** Decided: personal use plus public GitHub, not notarized.
 4. **Cursor's local token.** Is reading it, as an opt-in, acceptable? The alternative is a pasted key or admin access only, which covers Team plans only.
 5. **API spend.** Which keys do you have? Anthropic admin, OpenAI admin, or none?
 6. **Antigravity quota.** Its quota comes from a backend call made with the app's own OAuth login. Is a spike that captures that request acceptable, or should Antigravity wait until a local source turns up?
+7. **Claude status line spike.** Testing whether `rate_limits` appears needs a `statusLine` entry in `~/.claude/settings.json`. Is it OK to add a temporary entry on this Mac for the test, then remove it?
