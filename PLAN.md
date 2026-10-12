@@ -1,4 +1,4 @@
-# Redline: plan
+# Runway: plan
 
 A menu bar utility that tracks subscription usage and limits for Claude Code, Codex, Antigravity and Cursor, shown in a retro CRT-style dashboard. The visual theme is still called Phosphor.
 
@@ -6,7 +6,7 @@ Design mockup (canvas): https://claude.ai/artifact/CaPsAUSdq5wsAMGfGvAkEv (priva
 
 ## 1. Name
 
-**Chosen (tentative): Redline.** It fits the palette: red is reserved for limits at 90% or more, so the name matches the one alert color. Check GitHub and the App Store for existing apps with this name before the public repo goes live. Phosphor stays as the theme name.
+**Chosen: Runway.** It names how much room is left before a limit, which is what the app shows. Before the repo goes public, check the App Store and GitHub for conflicts. The GitHub search found no tool with this name in this category. Phosphor stays as the theme name.
 
 | Name | Why | Note |
 |---|---|---|
@@ -16,7 +16,7 @@ Design mockup (canvas): https://claude.ai/artifact/CaPsAUSdq5wsAMGfGvAkEv (priva
 | Quotabar | Describes exactly what it is. | Plain, less retro. |
 | Ration | Fits the "limits" idea. | Slightly negative tone. |
 
-Bundle ID: `com.<you>.redline` as a placeholder. Set it before the first public release.
+Bundle ID: `com.tomaslatyn.runway`.
 
 ## 2. Design direction: Phosphor theme
 
@@ -163,7 +163,7 @@ struct ProviderSnapshot: Sendable {
 
 ## 9. Open decisions
 
-1. **Name.** Redline (tentative). Check for existing apps before the repo goes public.
+1. **Name.** Decided: Runway. Check for existing apps before the repo goes public.
 2. **Minimum macOS.** Decided: 14 (Sonoma).
 3. **Distribution.** Decided: personal use plus public GitHub, not notarized.
 4. **Cursor's local token.** Is reading it, as an opt-in, acceptable? The alternative is a pasted key or admin access only, which covers Team plans only.
