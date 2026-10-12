@@ -15,7 +15,9 @@ struct DashboardView: View {
                     .font(Retro.body(18))
                     .foregroundStyle(Palette.secondary)
             }
-            ClaudeCard(store: store)
+            ForEach(ProviderID.allCases, id: \.self) { provider in
+                ProviderCard(provider: provider, state: store.state(for: provider), now: store.now)
+            }
             footer
         }
         .font(Retro.body(20))
@@ -44,34 +46,43 @@ struct DashboardView: View {
     }
 }
 
-struct ClaudeCard: View {
-    let store: UsageStore
+struct ProviderCard: View {
+    let provider: ProviderID
+    let state: ProviderState
+    let now: Date
 
-    private var snapshot: ProviderSnapshot? { store.snapshot }
+    private var snapshot: ProviderSnapshot? { state.snapshot }
     private var hasWindows: Bool { !(snapshot?.windows.isEmpty ?? true) }
-    private var stale: Bool { snapshot?.isStale(at: store.now) ?? false }
+    private var stale: Bool { snapshot?.isStale(at: now) ?? false }
 
     /// Stale cards drop their provider color, so old data doesn't look live.
     private var accent: Color {
-        stale ? Palette.secondary : Palette.accent(for: .claudeCode)
+        stale ? Palette.secondary : Palette.accent(for: provider)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(ProviderID.claudeCode.displayName)
-                .font(Retro.title(9))
-                .foregroundStyle(accent)
+            HStack {
+                Text(provider.displayName)
+                    .font(Retro.title(9))
+                    .foregroundStyle(accent)
+                Spacer()
+                if let plan = snapshot?.plan {
+                    Text(plan)
+                        .foregroundStyle(Palette.secondary)
+                }
+            }
 
             if let snapshot, hasWindows {
-                ForEach(snapshot.windows, id: \.label) { window in
-                    WindowRow(window: window, accent: accent, now: store.now)
+                ForEach(snapshot.windows, id: \.title) { window in
+                    WindowRow(window: window, accent: accent, now: now)
                 }
-            } else if let usageError = store.usageError {
-                Text(usageError)
+            } else if let error = state.error {
+                Text(error)
                     .foregroundStyle(Palette.alert)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                Text("Checking Claude Code usage…")
+                Text("Checking usage…")
                     .foregroundStyle(Palette.secondary)
             }
 
@@ -81,8 +92,8 @@ struct ClaudeCard: View {
                     .foregroundStyle(Palette.secondary)
             }
 
-            if let usageError = store.usageError, hasWindows {
-                Text("Couldn't refresh: \(usageError)")
+            if let error = state.error, hasWindows {
+                Text("Couldn't refresh: \(error)")
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.alert)
                     .fixedSize(horizontal: false, vertical: true)
@@ -129,7 +140,7 @@ struct WindowRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 10) {
-                Text(windowName)
+                Text(window.title)
                     .foregroundStyle(Palette.secondary)
                     .frame(width: 80, alignment: .leading)
                 Text(Bar.text(percent: percent ?? 0))
@@ -142,15 +153,6 @@ struct WindowRow: View {
                 .font(Retro.body(17))
                 .foregroundStyle(Palette.secondary)
                 .padding(.leading, 90)
-        }
-    }
-
-    /// Same names as Claude Code's /usage panel.
-    private var windowName: String {
-        switch window.label {
-        case "5H": "Session"
-        case "WK": "Weekly"
-        default: window.label
         }
     }
 

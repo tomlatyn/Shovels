@@ -74,10 +74,10 @@ enum ClaudeUsageCLI {
         for line in output.components(separatedBy: .newlines) {
             if let match = line.firstMatch(of: #/Current session: (\d+)% used · resets (.+)/#),
                let percent = Double(match.1) {
-                windows.append(UsageWindow(label: "5H", usedPercent: percent, resetsAt: resetDate(String(match.2), now: now)))
+                windows.append(UsageWindow(title: "Session", minutes: 300, usedPercent: percent, resetsAt: resetDate(String(match.2), now: now)))
             } else if let match = line.firstMatch(of: #/Current week \(all models\): (\d+)% used · resets (.+)/#),
                       let percent = Double(match.1) {
-                windows.append(UsageWindow(label: "WK", usedPercent: percent, resetsAt: resetDate(String(match.2), now: now)))
+                windows.append(UsageWindow(title: "Weekly", minutes: 10080, usedPercent: percent, resetsAt: resetDate(String(match.2), now: now)))
             }
         }
         return windows

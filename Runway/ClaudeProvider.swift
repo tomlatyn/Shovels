@@ -6,6 +6,7 @@ enum ClaudeProvider {
         let windows = try ClaudeUsageCLI.fetch(now: now)
         return ProviderSnapshot(
             provider: .claudeCode,
+            plan: nil,
             windows: windows,
             asOf: now,
             tokensLast5h: tokensLast5h(now: now)
