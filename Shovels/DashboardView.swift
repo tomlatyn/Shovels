@@ -3,13 +3,17 @@ import SwiftUI
 
 struct DashboardView: View {
     let store: UsageStore
+    @State private var showingGuides = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("RUNWAY")
-                    .font(Retro.title(12))
-                    .foregroundStyle(Palette.phosphor)
+                HStack(spacing: 6) {
+                    Image(nsImage: ProviderGlyph.image(rows: ProviderGlyph.shovel))
+                    Text("SHOVELS")
+                        .font(Retro.title(12))
+                }
+                .foregroundStyle(Palette.phosphor)
                 Spacer()
                 Text(store.now, format: .dateTime.hour().minute())
                     .font(Retro.body(18))
@@ -17,6 +21,9 @@ struct DashboardView: View {
             }
             ForEach(ProviderID.allCases, id: \.self) { provider in
                 ProviderCard(provider: provider, state: store.state(for: provider), now: store.now)
+            }
+            if showingGuides {
+                GuidesView()
             }
             footer
         }
@@ -31,11 +38,12 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 TerminalButton(title: store.isChecking ? "CHECKING" : "REFRESH") { store.refreshNow() }
-                TerminalButton(title: store.launchAtLogin ? "OPEN AT LOGIN: ON" : "OPEN AT LOGIN: OFF") {
-                    store.setLaunchAtLogin(!store.launchAtLogin)
-                }
+                TerminalButton(title: showingGuides ? "HIDE GUIDES" : "GUIDES") { showingGuides.toggle() }
                 Spacer()
                 TerminalButton(title: "QUIT") { NSApplication.shared.terminate(nil) }
+            }
+            TerminalButton(title: store.launchAtLogin ? "OPEN AT LOGIN: ON" : "OPEN AT LOGIN: OFF") {
+                store.setLaunchAtLogin(!store.launchAtLogin)
             }
             if let error = store.loginError {
                 Text(error)
@@ -120,6 +128,7 @@ struct TerminalButton: View {
         Button(action: action) {
             Text(title)
                 .font(Retro.body(18))
+                .fixedSize()
                 .foregroundStyle(Palette.phosphor)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
@@ -143,8 +152,7 @@ struct WindowRow: View {
                 Text(window.title)
                     .foregroundStyle(Palette.secondary)
                     .frame(width: 80, alignment: .leading)
-                Text(Bar.text(percent: percent ?? 0))
-                    .foregroundStyle(barColor)
+                CellBar(percent: percent, color: barColor)
                 Spacer()
                 Text(percentLabel)
                     .foregroundStyle(percent == nil ? Palette.secondary : Palette.phosphor)
@@ -171,5 +179,23 @@ struct WindowRow: View {
         guard let resetsAt = window.resetsAt else { return "reset time unknown" }
         if resetsAt <= now { return "Reset. Checks again on refresh." }
         return "Resets " + resetsAt.formatted(.relative(presentation: .named))
+    }
+}
+
+/// Ten pixel cells, filled to the percentage. Drawn as shapes, so the bar doesn't depend on a font.
+struct CellBar: View {
+    let percent: Double?
+    let color: Color
+    var cells = 10
+
+    var body: some View {
+        let filled = min(cells, max(0, Int(((percent ?? 0) / 100 * Double(cells)).rounded(.down))))
+        HStack(spacing: 2) {
+            ForEach(0..<cells, id: \.self) { index in
+                Rectangle()
+                    .fill(index < filled ? color : Palette.border)
+                    .frame(width: 9, height: 14)
+            }
+        }
     }
 }

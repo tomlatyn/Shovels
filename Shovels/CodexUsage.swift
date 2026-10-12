@@ -7,7 +7,7 @@ enum CodexUsageError: Error, Sendable {
 
     var message: String {
         switch self {
-        case .notInstalled: "Codex isn't installed where Runway can find it."
+        case .notInstalled: "Codex isn't installed where Shovels can find it."
         case .timedOut: "Codex took too long to answer."
         case .noReply: "Codex didn't return rate limits. Check that you're signed in to Codex."
         }
@@ -15,7 +15,7 @@ enum CodexUsageError: Error, Sendable {
 }
 
 /// Reads Codex's rate limits through `codex app-server`, the same protocol the Codex app uses.
-/// Codex does the sign-in. Runway never sees the login.
+/// Codex does the sign-in. Shovels never sees the login.
 enum CodexUsage {
     static let candidatePaths = ["/opt/homebrew/bin/codex", "/usr/local/bin/codex"]
 
@@ -32,7 +32,7 @@ enum CodexUsage {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: path)
         process.arguments = ["app-server"]
-        process.currentDirectoryURL = RunwayPaths.home
+        process.currentDirectoryURL = ShovelsPaths.home
         var environment = ProcessInfo.processInfo.environment
         environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
         process.environment = environment
@@ -55,7 +55,7 @@ enum CodexUsage {
 
         let writer = input.fileHandleForWriting
         send(["jsonrpc": "2.0", "id": 1, "method": "initialize",
-              "params": ["clientInfo": ["name": "runway", "version": "0.1.0"]]], to: writer)
+              "params": ["clientInfo": ["name": "shovels", "version": "0.1.0"]]], to: writer)
         send(["jsonrpc": "2.0", "method": "initialized"], to: writer)
         send(["jsonrpc": "2.0", "id": 2, "method": "account/rateLimits/read"], to: writer)
 

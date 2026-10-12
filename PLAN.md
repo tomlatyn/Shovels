@@ -6,7 +6,7 @@ Design mockup (canvas): https://claude.ai/artifact/CaPsAUSdq5wsAMGfGvAkEv (priva
 
 ## 1. Name
 
-**Chosen: Runway.** It names how much room is left before a limit, which is what the app shows. Before the repo goes public, check the App Store and GitHub for conflicts. The GitHub search found no tool with this name in this category. Phosphor stays as the theme name.
+**Chosen: Runway, later renamed to Shovels.** It names how much room is left before a limit, which is what the app shows. Before the repo goes public, check the App Store and GitHub for conflicts. The GitHub search found no tool with this name in this category. Phosphor stays as the theme name.
 
 | Name | Why | Note |
 |---|---|---|

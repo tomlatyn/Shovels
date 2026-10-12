@@ -9,7 +9,7 @@ enum ClaudeUsageError: Error, Sendable {
     var message: String {
         switch self {
         case .notInstalled:
-            "Claude Code isn't installed where Runway can find it."
+            "Claude Code isn't installed where Shovels can find it."
         case .timedOut:
             "Claude Code took too long to answer."
         case .noUsage(let firstLine):
@@ -19,7 +19,7 @@ enum ClaudeUsageError: Error, Sendable {
 }
 
 /// Reads the same numbers as Claude Code's /usage panel by running the official CLI.
-/// Runway never sees or stores the login token.
+/// Shovels never sees or stores the login token.
 enum ClaudeUsageCLI {
     static let candidatePaths = ["/opt/homebrew/bin/claude", "/usr/local/bin/claude"]
 
@@ -29,7 +29,7 @@ enum ClaudeUsageCLI {
 
     static func fetch(now: Date) throws -> [UsageWindow] {
         guard let path = binaryPath() else { throw ClaudeUsageError.notInstalled }
-        let output = try run(path)
+        let output = try run(path, arguments: ["-p", "/usage"])
         let windows = parse(output, now: now)
         if windows.isEmpty {
             let firstLine = output.components(separatedBy: .newlines).first { !$0.isEmpty } ?? ""
@@ -38,12 +38,22 @@ enum ClaudeUsageCLI {
         return windows
     }
 
-    /// Runs `claude -p /usage`. Print mode sends no model request, so it doesn't move the limits.
-    private static func run(_ path: String) throws -> String {
+    /// The subscription tier, such as "pro" or "max", from `claude auth status --json`.
+    /// Only that field is read. The email and organization in the output are never kept.
+    static func plan() -> String? {
+        guard let path = binaryPath(),
+              let output = try? run(path, arguments: ["auth", "status", "--json"]),
+              let object = try? JSONSerialization.jsonObject(with: Data(output.utf8)) as? [String: Any],
+              let type = object["subscriptionType"] as? String else { return nil }
+        return type.uppercased()
+    }
+
+    /// Runs the claude CLI. `-p /usage` sends no model request, so it doesn't move the limits.
+    private static func run(_ path: String, arguments: [String]) throws -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: path)
-        process.arguments = ["-p", "/usage"]
-        process.currentDirectoryURL = RunwayPaths.home
+        process.arguments = arguments
+        process.currentDirectoryURL = ShovelsPaths.home
         var environment = ProcessInfo.processInfo.environment
         // Apps started from Finder don't get the shell's PATH, and the claude script needs node.
         environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"

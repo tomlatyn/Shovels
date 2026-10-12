@@ -6,6 +6,7 @@ struct MenuBarLabel: View {
 
     var body: some View {
         HStack(spacing: 8) {
+            Image(nsImage: ProviderGlyph.image(rows: ProviderGlyph.shovel))
             ForEach(UsageStore.menuProviders, id: \.self) { provider in
                 HStack(spacing: 3) {
                     Image(nsImage: ProviderGlyph.image(for: provider))

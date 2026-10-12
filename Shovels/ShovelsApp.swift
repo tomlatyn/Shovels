@@ -1,11 +1,11 @@
 import SwiftUI
 
 @main
-struct RunwayApp: App {
+struct ShovelsApp: App {
     @State private var store = UsageStore()
 
     init() {
-        RunwayFonts.register()
+        ShovelsFonts.register()
     }
 
     var body: some Scene {

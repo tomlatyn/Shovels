@@ -27,7 +27,7 @@ enum Palette {
     }
 }
 
-/// Bundled retro fonts. Both are registered by RunwayFonts at launch.
+/// Bundled retro fonts. Both are registered by ShovelsFonts at launch.
 enum Retro {
     /// VT323 for body text and numbers.
     static func body(_ size: CGFloat) -> Font {

@@ -25,6 +25,18 @@ enum ProviderGlyph {
         "........",
     ]
 
+    /// Shovel for the app itself, drawn at the start of the menu bar and in the header.
+    static let shovel = [
+        "......##",
+        ".....##.",
+        "....##..",
+        "...##...",
+        "..###...",
+        ".#####..",
+        ".#####..",
+        "..###...",
+    ]
+
     static func grid(for provider: ProviderID) -> [String] {
         switch provider {
         case .claudeCode: spark
@@ -33,7 +45,11 @@ enum ProviderGlyph {
     }
 
     static func image(for provider: ProviderID, pointSize: CGFloat = 16) -> NSImage {
-        let rows = grid(for: provider)
+        image(rows: grid(for: provider), pointSize: pointSize)
+    }
+
+    /// Draws a grid as a template image, so the menu bar and the dashboard tint it.
+    static func image(rows: [String], pointSize: CGFloat = 16) -> NSImage {
         let cell = pointSize / CGFloat(rows.count)
         let image = NSImage(size: NSSize(width: pointSize, height: pointSize), flipped: true) { _ in
             NSColor.black.setFill()

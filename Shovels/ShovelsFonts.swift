@@ -1,7 +1,7 @@
 import CoreText
 import Foundation
 
-enum RunwayFonts {
+enum ShovelsFonts {
     /// Registers the bundled fonts for this process only. Nothing is installed system-wide.
     static func register() {
         for name in ["PressStart2P-Regular", "VT323-Regular"] {

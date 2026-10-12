@@ -6,7 +6,7 @@ enum ClaudeProvider {
         let windows = try ClaudeUsageCLI.fetch(now: now)
         return ProviderSnapshot(
             provider: .claudeCode,
-            plan: nil,
+            plan: ClaudeUsageCLI.plan(),
             windows: windows,
             asOf: now,
             tokensLast5h: tokensLast5h(now: now)
@@ -17,7 +17,7 @@ enum ClaudeProvider {
     /// Claude Code writes the same message more than once, so each message id is counted once.
     static func tokensLast5h(now: Date) -> Int? {
         guard let files = FileManager.default.enumerator(
-            at: RunwayPaths.claudeProjects,
+            at: ShovelsPaths.claudeProjects,
             includingPropertiesForKeys: [.contentModificationDateKey],
             options: [.skipsHiddenFiles]
         ) else { return nil }

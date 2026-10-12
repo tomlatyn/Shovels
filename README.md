@@ -1,22 +1,26 @@
-# Runway
+# Shovels
 
-A macOS menu bar app that shows how much room is left in your Claude Code limits, in a retro CRT-style dashboard.
+A macOS menu bar app that shows your Claude Code and Codex limits in a retro CRT-style dashboard.
 
-The MVP tracks Claude Code only. It shows the 5-hour and weekly windows, and the input and output tokens from the last five hours. Codex, alerts, and API spend come later. See [PLAN.md](PLAN.md) for the full plan.
+- **Claude Code:** session and weekly limits, your plan (such as PRO), and input and output tokens from the last five hours.
+- **Codex:** the limit window for your account and plan.
+- **Not connected yet:** Cursor and Antigravity. Click GUIDES in the app to see what each one needs.
+
+See [PLAN.md](PLAN.md) for the full plan.
 
 ## Requirements
 
 - macOS 14 (Sonoma) or later
-- Xcode 16 or later (built with Xcode 27)
-- Claude Code, signed in
+- Xcode, to build from source (built with Xcode 27)
+- Claude Code and the Codex CLI, each signed in
 
 ## Build from source
 
 ```bash
-cd Limits   # the folder containing Runway.xcodeproj
-xcodebuild -project Runway.xcodeproj -scheme Runway -configuration Release \
+cd Limits   # the folder containing Shovels.xcodeproj
+xcodebuild -project Shovels.xcodeproj -scheme Shovels -configuration Release \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
-open build/Build/Products/Release/Runway.app
+open build/Build/Products/Release/Shovels.app
 ```
 
 A locally built app isn't quarantined, so macOS opens it without a warning.
@@ -25,26 +29,25 @@ Signing is optional for personal use. To sign with your own team, set it under S
 
 ## First launch
 
-1. Runway appears in the menu bar as `CC` with a percentage. Click it to open the dashboard.
-2. If limits are unavailable, click **ENABLE LIMITS**. Runway shows the exact change to `~/.claude/settings.json` before writing anything, and backs up your current file to `~/Library/Application Support/Runway/settings-backup.json`.
-3. Send one message in Claude Code. The limits appear after the first response.
-
-If you already have a status line, Runway leaves it alone. The card then says so.
+1. Shovels appears in the menu bar: a shovel, then Claude Code's session percentage and Codex's. Click it to open the dashboard.
+2. The numbers appear after the first check, which takes a few seconds.
+3. Click **GUIDES** for how to sign in to each tool.
 
 ## Downloaded builds
 
 A release zip isn't notarized, so macOS blocks the first launch. Open System Settings › Privacy & Security and choose **Open Anyway**. Or remove the quarantine flag in Terminal:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/Runway.app
+xattr -dr com.apple.quarantine /Applications/Shovels.app
 ```
 
-## What Runway reads
+## What Shovels reads
 
-- `~/Library/Application Support/Runway/claude-limits.json`, written by the status line helper Runway installs.
+- `claude -p /usage` and `claude auth status --json`, from the Claude Code CLI using your existing login. Only the plan field is read from the auth output.
+- `codex app-server`, asked for the account's rate limits, from the Codex CLI using your existing login.
 - `~/.claude/projects/**/*.jsonl`, to total input and output tokens over the last five hours.
 
-Nothing leaves your Mac. Runway makes no network calls.
+Shovels never reads or stores a login token. The CLIs contact their own services. Shovels makes no network calls of its own.
 
 ## Fonts
 
