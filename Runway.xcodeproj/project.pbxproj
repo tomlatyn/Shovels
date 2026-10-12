@@ -11,7 +11,7 @@
 		A1000000000000000000001D /* Usage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* Usage.swift */; };
 		A1000000000000000000001E /* RunwayPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* RunwayPaths.swift */; };
 		A1000000000000000000001F /* ClaudeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* ClaudeProvider.swift */; };
-		A10000000000000000000020 /* ClaudeSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* ClaudeSetup.swift */; };
+		A10000000000000000000020 /* ClaudeUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* ClaudeUsage.swift */; };
 		A10000000000000000000021 /* UsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* UsageStore.swift */; };
 		A10000000000000000000022 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* DashboardView.swift */; };
 		A10000000000000000000023 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* Palette.swift */; };
@@ -28,7 +28,7 @@
 		A10000000000000000000011 /* Usage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Usage.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* RunwayPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunwayPaths.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* ClaudeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeProvider.swift; sourceTree = "<group>"; };
-		A10000000000000000000014 /* ClaudeSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeSetup.swift; sourceTree = "<group>"; };
+		A10000000000000000000014 /* ClaudeUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeUsage.swift; sourceTree = "<group>"; };
 		A10000000000000000000015 /* UsageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStore.swift; sourceTree = "<group>"; };
 		A10000000000000000000016 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		A10000000000000000000017 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
@@ -75,7 +75,7 @@
 				A10000000000000000000011 /* Usage.swift */,
 				A10000000000000000000012 /* RunwayPaths.swift */,
 				A10000000000000000000013 /* ClaudeProvider.swift */,
-				A10000000000000000000014 /* ClaudeSetup.swift */,
+				A10000000000000000000014 /* ClaudeUsage.swift */,
 				A10000000000000000000015 /* UsageStore.swift */,
 				A10000000000000000000016 /* DashboardView.swift */,
 				A10000000000000000000017 /* Palette.swift */,
@@ -162,7 +162,7 @@
 				A1000000000000000000001D /* Usage.swift in Sources */,
 				A1000000000000000000001E /* RunwayPaths.swift in Sources */,
 				A1000000000000000000001F /* ClaudeProvider.swift in Sources */,
-				A10000000000000000000020 /* ClaudeSetup.swift in Sources */,
+				A10000000000000000000020 /* ClaudeUsage.swift in Sources */,
 				A10000000000000000000021 /* UsageStore.swift in Sources */,
 				A10000000000000000000022 /* DashboardView.swift in Sources */,
 				A10000000000000000000023 /* Palette.swift in Sources */,

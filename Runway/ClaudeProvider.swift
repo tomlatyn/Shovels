@@ -1,25 +1,13 @@
 import Foundation
 
-/// Reads Claude Code usage. Limits come from the status line helper's file, tokens from local logs.
+/// Claude Code usage: limits from the official CLI's /usage, tokens from local logs.
 enum ClaudeProvider {
-    static func snapshot(now: Date) -> ProviderSnapshot {
-        var windows: [UsageWindow] = []
-        var asOf: Date?
-
-        if let data = try? Data(contentsOf: RunwayPaths.limitsFile),
-           let payload = try? JSONDecoder().decode(StatusPayload.self, from: data),
-           let limits = payload.rateLimits {
-            windows = [
-                limits.fiveHour.map { UsageWindow(label: "5H", usedPercent: $0.usedPercentage, resetsAt: Date(timeIntervalSince1970: $0.resetsAt)) },
-                limits.sevenDay.map { UsageWindow(label: "WK", usedPercent: $0.usedPercentage, resetsAt: Date(timeIntervalSince1970: $0.resetsAt)) },
-            ].compactMap { $0 }
-            asOf = (try? FileManager.default.attributesOfItem(atPath: RunwayPaths.limitsFile.path))?[.modificationDate] as? Date
-        }
-
+    static func snapshot(now: Date) throws -> ProviderSnapshot {
+        let windows = try ClaudeUsageCLI.fetch(now: now)
         return ProviderSnapshot(
             provider: .claudeCode,
             windows: windows,
-            asOf: asOf,
+            asOf: now,
             tokensLast5h: tokensLast5h(now: now)
         )
     }
@@ -55,38 +43,5 @@ enum ClaudeProvider {
             }
         }
         return tokensByMessage.values.reduce(0, +)
-    }
-
-    private static func modificationDate(of url: URL) -> Date? {
-        (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
-    }
-}
-
-/// The part of Claude Code's status line JSON that Runway uses.
-struct StatusPayload: Decodable {
-    struct Window: Decodable {
-        let usedPercentage: Double
-        let resetsAt: Double
-
-        enum CodingKeys: String, CodingKey {
-            case usedPercentage = "used_percentage"
-            case resetsAt = "resets_at"
-        }
-    }
-
-    struct Limits: Decodable {
-        let fiveHour: Window?
-        let sevenDay: Window?
-
-        enum CodingKeys: String, CodingKey {
-            case fiveHour = "five_hour"
-            case sevenDay = "seven_day"
-        }
-    }
-
-    let rateLimits: Limits?
-
-    enum CodingKeys: String, CodingKey {
-        case rateLimits = "rate_limits"
     }
 }

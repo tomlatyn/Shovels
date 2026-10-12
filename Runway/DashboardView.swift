@@ -28,7 +28,7 @@ struct DashboardView: View {
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                TerminalButton(title: "REFRESH") { store.refreshNow() }
+                TerminalButton(title: store.isChecking ? "CHECKING" : "REFRESH") { store.refreshNow() }
                 TerminalButton(title: store.launchAtLogin ? "OPEN AT LOGIN: ON" : "OPEN AT LOGIN: OFF") {
                     store.setLaunchAtLogin(!store.launchAtLogin)
                 }
@@ -46,15 +46,9 @@ struct DashboardView: View {
 
 struct ClaudeCard: View {
     let store: UsageStore
-    @State private var confirmingConnect: Bool
-
-    init(store: UsageStore, startConfirming: Bool = false) {
-        self.store = store
-        _confirmingConnect = State(initialValue: startConfirming)
-    }
 
     private var snapshot: ProviderSnapshot? { store.snapshot }
-    private var hasLimits: Bool { !(snapshot?.windows.isEmpty ?? true) }
+    private var hasWindows: Bool { !(snapshot?.windows.isEmpty ?? true) }
     private var stale: Bool { snapshot?.isStale(at: store.now) ?? false }
 
     /// Stale cards drop their provider color, so old data doesn't look live.
@@ -68,17 +62,30 @@ struct ClaudeCard: View {
                 .font(Retro.title(9))
                 .foregroundStyle(accent)
 
-            if let snapshot, hasLimits {
+            if let snapshot, hasWindows {
                 ForEach(snapshot.windows, id: \.label) { window in
                     WindowRow(window: window, accent: accent, now: store.now)
                 }
-                if let asOf = snapshot.asOf {
-                    Text("Updated \(asOf.formatted(.relative(presentation: .named)))")
-                        .font(Retro.body(17))
-                        .foregroundStyle(Palette.secondary)
-                }
+            } else if let usageError = store.usageError {
+                Text(usageError)
+                    .foregroundStyle(Palette.alert)
+                    .fixedSize(horizontal: false, vertical: true)
             } else {
-                statusMessage
+                Text("Checking Claude Code usage…")
+                    .foregroundStyle(Palette.secondary)
+            }
+
+            if let asOf = snapshot?.asOf {
+                Text("Checked \(asOf.formatted(.relative(presentation: .named)))")
+                    .font(Retro.body(17))
+                    .foregroundStyle(Palette.secondary)
+            }
+
+            if let usageError = store.usageError, hasWindows {
+                Text("Couldn't refresh: \(usageError)")
+                    .font(Retro.body(17))
+                    .foregroundStyle(Palette.alert)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if let tokens = snapshot?.tokensLast5h {
@@ -86,60 +93,11 @@ struct ClaudeCard: View {
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
             }
-
-            if store.setupStatus == .installed {
-                TerminalButton(title: "DISCONNECT") { store.disconnect() }
-            }
-
-            if let error = store.connectError {
-                Text(error)
-                    .font(Retro.body(17))
-                    .foregroundStyle(Palette.alert)
-            }
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
         .overlay(Rectangle().stroke(Palette.border, lineWidth: 1))
-    }
-
-    @ViewBuilder private var statusMessage: some View {
-        switch store.setupStatus {
-        case .notConfigured:
-            if confirmingConnect {
-                Text("Runway adds one line to Claude Code's settings. Your settings are backed up first. You can disconnect anytime.")
-                    .font(Retro.body(17))
-                    .foregroundStyle(Palette.phosphor)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    TerminalButton(title: "CONNECT") {
-                        store.connect()
-                        confirmingConnect = false
-                    }
-                    TerminalButton(title: "NOT NOW") { confirmingConnect = false }
-                }
-            } else {
-                Text("Not connected")
-                    .foregroundStyle(Palette.phosphor)
-                Text("Connect to see your usage here.")
-                    .font(Retro.body(17))
-                    .foregroundStyle(Palette.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                TerminalButton(title: "CONNECT CLAUDE CODE") { confirmingConnect = true }
-            }
-        case .installed:
-            Text("Connected")
-                .foregroundStyle(Palette.phosphor)
-            Text("Usage appears after Claude's next reply.")
-                .font(Retro.body(17))
-                .foregroundStyle(Palette.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        case .otherStatusLineSet:
-            Text("Claude Code already uses a status line from another tool. Runway can't connect without replacing it.")
-                .font(Retro.body(17))
-                .foregroundStyle(Palette.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 }
 
@@ -173,7 +131,7 @@ struct WindowRow: View {
             HStack(spacing: 10) {
                 Text(windowName)
                     .foregroundStyle(Palette.secondary)
-                    .frame(width: 60, alignment: .leading)
+                    .frame(width: 80, alignment: .leading)
                 Text(Bar.text(percent: percent ?? 0))
                     .foregroundStyle(barColor)
                 Spacer()
@@ -183,14 +141,15 @@ struct WindowRow: View {
             Text(resetLabel)
                 .font(Retro.body(17))
                 .foregroundStyle(Palette.secondary)
-                .padding(.leading, 70)
+                .padding(.leading, 90)
         }
     }
 
+    /// Same names as Claude Code's /usage panel.
     private var windowName: String {
         switch window.label {
-        case "5H": "5 hours"
-        case "WK": "Week"
+        case "5H": "Session"
+        case "WK": "Weekly"
         default: window.label
         }
     }
@@ -208,7 +167,7 @@ struct WindowRow: View {
 
     private var resetLabel: String {
         guard let resetsAt = window.resetsAt else { return "reset time unknown" }
-        if resetsAt <= now { return "Reset. Updates after your next reply." }
+        if resetsAt <= now { return "Reset. Checks again on refresh." }
         return "Resets " + resetsAt.formatted(.relative(presentation: .named))
     }
 }

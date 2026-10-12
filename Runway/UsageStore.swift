@@ -4,53 +4,41 @@ import Observation
 @MainActor
 @Observable
 final class UsageStore {
+    /// The last good reading. Kept when a later check fails, so the numbers don't vanish.
     private(set) var snapshot: ProviderSnapshot?
-    private(set) var setupStatus: ClaudeSetup.Status = .notConfigured
+    private(set) var usageError: String?
+    private(set) var isChecking = false
     private(set) var now: Date = .now
-    private(set) var connectError: String?
     private(set) var launchAtLogin = false
     private(set) var loginError: String?
     private var timer: Timer?
 
     init() {
         Task { await refresh() }
-        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.refresh() }
         }
     }
 
     func refresh() async {
-        let now = Date.now
-        // File reads and log scans run off the main actor.
-        let snapshot = await Task.detached { ClaudeProvider.snapshot(now: now) }.value
-        self.snapshot = snapshot
-        self.now = now
-        self.setupStatus = ClaudeSetup.status()
-        self.launchAtLogin = LaunchAtLogin.isEnabled
+        guard !isChecking else { return }
+        isChecking = true
+        defer { isChecking = false }
+
+        let checkedAt = Date.now
+        // The CLI call and the log scan both run off the main actor.
+        do {
+            snapshot = try await Task.detached { try ClaudeProvider.snapshot(now: checkedAt) }.value
+            usageError = nil
+        } catch {
+            usageError = (error as? ClaudeUsageError)?.message ?? error.localizedDescription
+        }
+        now = .now
+        launchAtLogin = LaunchAtLogin.isEnabled
     }
 
     func refreshNow() {
         Task { await refresh() }
-    }
-
-    func connect() {
-        do {
-            try ClaudeSetup.connect()
-            connectError = nil
-        } catch {
-            connectError = error.localizedDescription
-        }
-        refreshNow()
-    }
-
-    func disconnect() {
-        do {
-            try ClaudeSetup.disconnect()
-            connectError = nil
-        } catch {
-            connectError = error.localizedDescription
-        }
-        refreshNow()
     }
 
     func setLaunchAtLogin(_ enabled: Bool) {
@@ -63,32 +51,28 @@ final class UsageStore {
         refreshNow()
     }
 
-    /// The 5-hour percentage, or nil when there's no fresh reading.
-    private var freshFiveHourPercent: Double? {
+    /// The session percentage, or nil when there's no reading or its window has reset.
+    private var freshSessionPercent: Double? {
         guard let snapshot, !snapshot.isStale(at: now),
-              let fiveHour = snapshot.windows.first(where: { $0.label == "5H" }) else {
+              let session = snapshot.windows.first(where: { $0.label == "5H" }) else {
             return nil
         }
-        return fiveHour.usedPercent
+        return session.usedPercent
     }
 
-    /// Menu bar text: the 5-hour percentage, or "?" when there's no fresh reading.
+    /// Menu bar text: the session percentage, or "?" when there's no fresh reading.
     var menuBarText: String {
-        freshFiveHourPercent.map { "\(Int($0))%" } ?? "?"
+        freshSessionPercent.map { "\(Int($0))%" } ?? "?"
     }
 
     /// Tooltip for the menu bar item. Says why there's no number yet.
     var menuBarHelp: String {
-        if freshFiveHourPercent != nil {
-            return "Claude Code: 5-hour limit used"
+        if freshSessionPercent != nil {
+            return "Claude Code: session limit used"
         }
-        switch setupStatus {
-        case .notConfigured:
-            return "Connect Claude Code in Runway to see your limits"
-        case .installed:
-            return "Waiting for Claude Code's next reply"
-        case .otherStatusLineSet:
-            return "Claude Code's status line belongs to another tool"
+        if let usageError {
+            return usageError
         }
+        return "Checking Claude Code usage"
     }
 }
