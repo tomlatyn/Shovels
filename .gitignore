@@ -21,6 +21,23 @@ xcuserdata/
 
 # Local secrets and captured provider data (never commit)
 .env
+.env.*
 *.local.json
 *.p8
 *.pem
+*.key
+*.keychain
+*.mobileprovision
+*.certSigningRequest
+*.p12
+*.cer
+*.dump
+credentials*
+secrets*
+*-secrets.*
+statusline*.json
+*-spike.json
+auth.json
+oauth*.json
+*token*.json
+*_creds.json
