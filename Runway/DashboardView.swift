@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct DashboardView: View {
@@ -7,18 +8,38 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("RUNWAY")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(Retro.title(12))
                     .foregroundStyle(Palette.phosphor)
                 Spacer()
                 Text(store.now, format: .dateTime.hour().minute())
+                    .font(Retro.body(18))
                     .foregroundStyle(Palette.secondary)
             }
             ClaudeCard(store: store)
+            footer
         }
-        .font(.system(size: 13, design: .monospaced))
+        .font(Retro.body(20))
         .padding(14)
         .frame(width: 372, alignment: .leading)
         .background(Palette.panel)
+    }
+
+    private var footer: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                TerminalButton(title: "REFRESH") { store.refreshNow() }
+                TerminalButton(title: store.launchAtLogin ? "LOGIN: ON" : "LOGIN: OFF") {
+                    store.setLaunchAtLogin(!store.launchAtLogin)
+                }
+                Spacer()
+                TerminalButton(title: "QUIT") { NSApplication.shared.terminate(nil) }
+            }
+            if let error = store.loginError {
+                Text(error)
+                    .font(Retro.body(16))
+                    .foregroundStyle(Palette.alert)
+            }
+        }
     }
 }
 
@@ -38,7 +59,7 @@ struct ClaudeCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(ProviderID.claudeCode.displayName)
-                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .font(Retro.title(9))
                 .foregroundStyle(accent)
 
             if let snapshot, hasLimits {
@@ -47,7 +68,7 @@ struct ClaudeCard: View {
                 }
                 if let asOf = snapshot.asOf {
                     Text("src statusline · as of \(asOf.formatted(.relative(presentation: .named)))")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(Retro.body(17))
                         .foregroundStyle(Palette.secondary)
                 }
             } else {
@@ -56,7 +77,7 @@ struct ClaudeCard: View {
 
             if let tokens = snapshot?.tokensLast5h {
                 Text("5H tokens in+out \(tokens.formatted(.number.notation(.compactName)))")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
             }
         }
@@ -72,10 +93,10 @@ struct ClaudeCard: View {
                     .foregroundStyle(Palette.secondary)
                 if previewingSetup {
                     Text("Runway will set this in ~/.claude/settings.json. Your current file is backed up first.")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(Retro.body(17))
                         .foregroundStyle(Palette.secondary)
                     Text(ClaudeSetup.helperCommand)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(Retro.body(15))
                         .foregroundStyle(Palette.phosphor)
                     HStack(spacing: 8) {
                         TerminalButton(title: "WRITE SETTINGS") {
@@ -89,7 +110,7 @@ struct ClaudeCard: View {
                 }
                 if let error = store.setupError {
                     Text(error)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(Retro.body(17))
                         .foregroundStyle(Palette.alert)
                 }
             case .installed:
@@ -110,7 +131,7 @@ struct TerminalButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 14, design: .monospaced))
+                .font(Retro.body(18))
                 .foregroundStyle(Palette.phosphor)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
@@ -141,7 +162,7 @@ struct WindowRow: View {
                     .foregroundStyle(percent == nil ? Palette.secondary : Palette.phosphor)
             }
             Text(resetLabel)
-                .font(.system(size: 11, design: .monospaced))
+                .font(Retro.body(17))
                 .foregroundStyle(Palette.secondary)
                 .padding(.leading, 38)
         }

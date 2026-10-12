@@ -8,6 +8,8 @@ final class UsageStore {
     private(set) var setupStatus: ClaudeSetup.Status = .notConfigured
     private(set) var now: Date = .now
     private(set) var setupError: String?
+    private(set) var launchAtLogin = false
+    private(set) var loginError: String?
     private var timer: Timer?
 
     init() {
@@ -24,6 +26,11 @@ final class UsageStore {
         self.snapshot = snapshot
         self.now = now
         self.setupStatus = ClaudeSetup.status()
+        self.launchAtLogin = LaunchAtLogin.isEnabled
+    }
+
+    func refreshNow() {
+        Task { await refresh() }
     }
 
     func enableLimits() {
@@ -33,7 +40,17 @@ final class UsageStore {
         } catch {
             setupError = error.localizedDescription
         }
-        Task { await refresh() }
+        refreshNow()
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            try LaunchAtLogin.set(enabled)
+            loginError = nil
+        } catch {
+            loginError = error.localizedDescription
+        }
+        refreshNow()
     }
 
     /// Monochrome menu bar text, such as "CC 47%" or "CC ?" when there's no fresh reading.

@@ -7,30 +7,38 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A10000000000000000000017 /* RunwayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000F /* RunwayApp.swift */; };
-		A10000000000000000000018 /* Usage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* Usage.swift */; };
-		A10000000000000000000019 /* RunwayPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* RunwayPaths.swift */; };
-		A1000000000000000000001A /* ClaudeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* ClaudeProvider.swift */; };
-		A1000000000000000000001B /* ClaudeSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* ClaudeSetup.swift */; };
-		A1000000000000000000001C /* UsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* UsageStore.swift */; };
-		A1000000000000000000001D /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* DashboardView.swift */; };
-		A1000000000000000000001E /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* Palette.swift */; };
+		A1000000000000000000001A /* RunwayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* RunwayApp.swift */; };
+		A1000000000000000000001B /* Usage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* Usage.swift */; };
+		A1000000000000000000001C /* RunwayPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* RunwayPaths.swift */; };
+		A1000000000000000000001D /* ClaudeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* ClaudeProvider.swift */; };
+		A1000000000000000000001E /* ClaudeSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* ClaudeSetup.swift */; };
+		A1000000000000000000001F /* UsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* UsageStore.swift */; };
+		A10000000000000000000020 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* DashboardView.swift */; };
+		A10000000000000000000021 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* Palette.swift */; };
+		A10000000000000000000022 /* RunwayFonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* RunwayFonts.swift */; };
+		A10000000000000000000023 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* LaunchAtLogin.swift */; };
+		A10000000000000000000026 /* PressStart2P-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024 /* PressStart2P-Regular.ttf */; };
+		A10000000000000000000027 /* VT323-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* VT323-Regular.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A1000000000000000000000F /* RunwayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunwayApp.swift; sourceTree = "<group>"; };
-		A10000000000000000000010 /* Usage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Usage.swift; sourceTree = "<group>"; };
-		A10000000000000000000011 /* RunwayPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunwayPaths.swift; sourceTree = "<group>"; };
-		A10000000000000000000012 /* ClaudeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeProvider.swift; sourceTree = "<group>"; };
-		A10000000000000000000013 /* ClaudeSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeSetup.swift; sourceTree = "<group>"; };
-		A10000000000000000000014 /* UsageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000015 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
-		A10000000000000000000016 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
+		A10000000000000000000010 /* RunwayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunwayApp.swift; sourceTree = "<group>"; };
+		A10000000000000000000011 /* Usage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Usage.swift; sourceTree = "<group>"; };
+		A10000000000000000000012 /* RunwayPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunwayPaths.swift; sourceTree = "<group>"; };
+		A10000000000000000000013 /* ClaudeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeProvider.swift; sourceTree = "<group>"; };
+		A10000000000000000000014 /* ClaudeSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeSetup.swift; sourceTree = "<group>"; };
+		A10000000000000000000015 /* UsageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000016 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		A10000000000000000000017 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
+		A10000000000000000000018 /* RunwayFonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunwayFonts.swift; sourceTree = "<group>"; };
+		A10000000000000000000019 /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
+		A10000000000000000000024 /* PressStart2P-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = PressStart2P-Regular.ttf; sourceTree = "<group>"; };
+		A10000000000000000000025 /* VT323-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = VT323-Regular.ttf; sourceTree = "<group>"; };
 		A10000000000000000000006 /* Runway.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runway.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A1000000000000000000000E /* Frameworks */ = {
+		A1000000000000000000000F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -59,14 +67,18 @@
 		A10000000000000000000004 /* Runway */ = {
 			isa = PBXGroup;
 			children = (
-				A1000000000000000000000F /* RunwayApp.swift */,
-				A10000000000000000000010 /* Usage.swift */,
-				A10000000000000000000011 /* RunwayPaths.swift */,
-				A10000000000000000000012 /* ClaudeProvider.swift */,
-				A10000000000000000000013 /* ClaudeSetup.swift */,
-				A10000000000000000000014 /* UsageStore.swift */,
-				A10000000000000000000015 /* DashboardView.swift */,
-				A10000000000000000000016 /* Palette.swift */,
+				A10000000000000000000010 /* RunwayApp.swift */,
+				A10000000000000000000011 /* Usage.swift */,
+				A10000000000000000000012 /* RunwayPaths.swift */,
+				A10000000000000000000013 /* ClaudeProvider.swift */,
+				A10000000000000000000014 /* ClaudeSetup.swift */,
+				A10000000000000000000015 /* UsageStore.swift */,
+				A10000000000000000000016 /* DashboardView.swift */,
+				A10000000000000000000017 /* Palette.swift */,
+				A10000000000000000000018 /* RunwayFonts.swift */,
+				A10000000000000000000019 /* LaunchAtLogin.swift */,
+				A10000000000000000000024 /* PressStart2P-Regular.ttf */,
+				A10000000000000000000025 /* VT323-Regular.ttf */,
 			);
 			path = Runway;
 			sourceTree = "<group>";
@@ -79,7 +91,8 @@
 			buildConfigurationList = A10000000000000000000008 /* Build configuration list for PBXNativeTarget "Runway" */;
 			buildPhases = (
 				A1000000000000000000000D /* Sources */,
-				A1000000000000000000000E /* Frameworks */,
+				A1000000000000000000000F /* Frameworks */,
+				A1000000000000000000000E /* Resources */,
 			);
 			buildRules = (
 			);
@@ -122,19 +135,33 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		A1000000000000000000000E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000026 /* PressStart2P-Regular.ttf in Resources */,
+				A10000000000000000000027 /* VT323-Regular.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		A1000000000000000000000D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000017 /* RunwayApp.swift in Sources */,
-				A10000000000000000000018 /* Usage.swift in Sources */,
-				A10000000000000000000019 /* RunwayPaths.swift in Sources */,
-				A1000000000000000000001A /* ClaudeProvider.swift in Sources */,
-				A1000000000000000000001B /* ClaudeSetup.swift in Sources */,
-				A1000000000000000000001C /* UsageStore.swift in Sources */,
-				A1000000000000000000001D /* DashboardView.swift in Sources */,
-				A1000000000000000000001E /* Palette.swift in Sources */,
+				A1000000000000000000001A /* RunwayApp.swift in Sources */,
+				A1000000000000000000001B /* Usage.swift in Sources */,
+				A1000000000000000000001C /* RunwayPaths.swift in Sources */,
+				A1000000000000000000001D /* ClaudeProvider.swift in Sources */,
+				A1000000000000000000001E /* ClaudeSetup.swift in Sources */,
+				A1000000000000000000001F /* UsageStore.swift in Sources */,
+				A10000000000000000000020 /* DashboardView.swift in Sources */,
+				A10000000000000000000021 /* Palette.swift in Sources */,
+				A10000000000000000000022 /* RunwayFonts.swift in Sources */,
+				A10000000000000000000023 /* LaunchAtLogin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,7 +174,6 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -166,7 +192,6 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;

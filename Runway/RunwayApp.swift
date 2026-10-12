@@ -4,12 +4,16 @@ import SwiftUI
 struct RunwayApp: App {
     @State private var store = UsageStore()
 
+    init() {
+        RunwayFonts.register()
+    }
+
     var body: some Scene {
         MenuBarExtra {
             DashboardView(store: store)
         } label: {
             Text(store.menuBarTitle)
-                .font(.system(size: 12, design: .monospaced))
+                .font(Retro.body(16))
         }
         .menuBarExtraStyle(.window)
     }

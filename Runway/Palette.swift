@@ -25,3 +25,16 @@ enum Palette {
         }
     }
 }
+
+/// Bundled retro fonts. Both are registered by RunwayFonts at launch.
+enum Retro {
+    /// VT323 for body text and numbers.
+    static func body(_ size: CGFloat) -> Font {
+        .custom("VT323-Regular", size: size)
+    }
+
+    /// Press Start 2P for titles and labels, used sparingly.
+    static func title(_ size: CGFloat) -> Font {
+        .custom("PressStart2P-Regular", size: size)
+    }
+}
