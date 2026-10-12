@@ -41,6 +41,7 @@ final class UsageStore {
         Task { await refresh() }
     }
 
+    /// Updates the toggle straight away. A usage check isn't needed for this, and it takes several seconds.
     func setLaunchAtLogin(_ enabled: Bool) {
         do {
             try LaunchAtLogin.set(enabled)
@@ -48,7 +49,7 @@ final class UsageStore {
         } catch {
             loginError = error.localizedDescription
         }
-        refreshNow()
+        launchAtLogin = LaunchAtLogin.isEnabled
     }
 
     /// The session percentage, or nil when there's no reading or its window has reset.
