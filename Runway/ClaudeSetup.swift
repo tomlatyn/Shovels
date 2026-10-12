@@ -1,25 +1,30 @@
 import Foundation
 
-/// Installs the status line helper that Runway reads limits from.
-/// Nothing is written until the user confirms in the dashboard.
+/// Connects Runway to Claude Code by setting Claude Code's status line to Runway's helper.
+/// Nothing changes until the user confirms in the dashboard, and Disconnect undoes it.
 enum ClaudeSetup {
     enum Status: Sendable, Equatable {
-        /// No status line is set, so Runway can offer to set its helper.
+        /// Runway isn't connected, and Claude Code has no status line set.
         case notConfigured
-        /// Runway's helper is the status line. Limits appear after the next Claude response.
+        /// Runway is connected. Usage appears after Claude's next reply.
         case installed
-        /// Another status line is set. Runway leaves it alone.
+        /// Another tool owns Claude Code's status line. Runway won't replace it.
         case otherStatusLineSet
     }
 
     enum SetupError: LocalizedError {
         case unreadableSettings
         case statusLineInUse
+        case notConnected
 
         var errorDescription: String? {
             switch self {
-            case .unreadableSettings: "Could not read ~/.claude/settings.json. Nothing was changed."
-            case .statusLineInUse: "A status line is already set. Nothing was changed."
+            case .unreadableSettings:
+                "Runway couldn't read Claude Code's settings, so nothing was changed."
+            case .statusLineInUse:
+                "Claude Code already uses a status line from another tool, so Runway left it alone."
+            case .notConnected:
+                "Runway isn't connected to Claude Code."
             }
         }
     }
@@ -43,21 +48,41 @@ enum ClaudeSetup {
         return command == helperCommand ? .installed : .otherStatusLineSet
     }
 
-    /// Backs up settings, writes the helper script, and sets the status line.
-    static func enable() throws {
+    /// Saves a backup of Claude Code's settings, then sets Runway's helper as the status line.
+    static func connect() throws {
         var settings = try readSettings() ?? [:]
         guard settings["statusLine"] == nil else { throw SetupError.statusLineInUse }
 
         try FileManager.default.createDirectory(at: RunwayPaths.support, withIntermediateDirectories: true)
         try helperScript.write(to: RunwayPaths.helperScript, atomically: true, encoding: .utf8)
-
-        if FileManager.default.fileExists(atPath: RunwayPaths.claudeSettings.path) {
-            let backup = RunwayPaths.support.appending(path: "settings-backup.json")
-            try? FileManager.default.removeItem(at: backup)
-            try FileManager.default.copyItem(at: RunwayPaths.claudeSettings, to: backup)
-        }
+        try backupSettings()
 
         settings["statusLine"] = ["type": "command", "command": helperCommand]
+        try writeSettings(settings)
+    }
+
+    /// Removes Runway's status line and its saved limits. Leaves any other tool's status line alone.
+    static func disconnect() throws {
+        guard var settings = try readSettings(),
+              let statusLine = settings["statusLine"] as? [String: Any],
+              statusLine["command"] as? String == helperCommand else {
+            throw SetupError.notConnected
+        }
+
+        try backupSettings()
+        settings["statusLine"] = nil
+        try writeSettings(settings)
+        try? FileManager.default.removeItem(at: RunwayPaths.limitsFile)
+    }
+
+    private static func backupSettings() throws {
+        guard FileManager.default.fileExists(atPath: RunwayPaths.claudeSettings.path) else { return }
+        let backup = RunwayPaths.support.appending(path: "settings-backup.json")
+        try? FileManager.default.removeItem(at: backup)
+        try FileManager.default.copyItem(at: RunwayPaths.claudeSettings, to: backup)
+    }
+
+    private static func writeSettings(_ settings: [String: Any]) throws {
         let data = try JSONSerialization.data(withJSONObject: settings, options: [.prettyPrinted, .sortedKeys])
         try FileManager.default.createDirectory(
             at: RunwayPaths.claudeSettings.deletingLastPathComponent(),

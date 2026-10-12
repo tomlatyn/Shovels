@@ -28,7 +28,7 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 TerminalButton(title: "REFRESH") { store.refreshNow() }
-                TerminalButton(title: store.launchAtLogin ? "LOGIN: ON" : "LOGIN: OFF") {
+                TerminalButton(title: store.launchAtLogin ? "OPEN AT LOGIN: ON" : "OPEN AT LOGIN: OFF") {
                     store.setLaunchAtLogin(!store.launchAtLogin)
                 }
                 Spacer()
@@ -36,7 +36,7 @@ struct DashboardView: View {
             }
             if let error = store.loginError {
                 Text(error)
-                    .font(Retro.body(16))
+                    .font(Retro.body(17))
                     .foregroundStyle(Palette.alert)
             }
         }
@@ -45,7 +45,7 @@ struct DashboardView: View {
 
 struct ClaudeCard: View {
     let store: UsageStore
-    @State private var previewingSetup = false
+    @State private var confirmingConnect = false
 
     private var snapshot: ProviderSnapshot? { store.snapshot }
     private var hasLimits: Bool { !(snapshot?.windows.isEmpty ?? true) }
@@ -57,7 +57,7 @@ struct ClaudeCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(ProviderID.claudeCode.displayName)
                 .font(Retro.title(9))
                 .foregroundStyle(accent)
@@ -67,59 +67,69 @@ struct ClaudeCard: View {
                     WindowRow(window: window, accent: accent, now: store.now)
                 }
                 if let asOf = snapshot.asOf {
-                    Text("src statusline · as of \(asOf.formatted(.relative(presentation: .named)))")
+                    Text("Updated \(asOf.formatted(.relative(presentation: .named)))")
                         .font(Retro.body(17))
                         .foregroundStyle(Palette.secondary)
                 }
             } else {
-                setupBlock
+                statusMessage
             }
 
             if let tokens = snapshot?.tokensLast5h {
-                Text("5H tokens in+out \(tokens.formatted(.number.notation(.compactName)))")
+                Text("Last 5 hours: \(tokens.formatted(.number.notation(.compactName))) tokens")
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
+            }
+
+            if store.setupStatus == .installed {
+                TerminalButton(title: "DISCONNECT") { store.disconnect() }
+            }
+
+            if let error = store.connectError {
+                Text(error)
+                    .font(Retro.body(17))
+                    .foregroundStyle(Palette.alert)
             }
         }
         .padding(10)
         .overlay(Rectangle().stroke(Palette.border, lineWidth: 1))
     }
 
-    @ViewBuilder private var setupBlock: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            switch store.setupStatus {
-            case .notConfigured:
-                Text("limits unavailable")
-                    .foregroundStyle(Palette.secondary)
-                if previewingSetup {
-                    Text("Runway will set this in ~/.claude/settings.json. Your current file is backed up first.")
-                        .font(Retro.body(17))
-                        .foregroundStyle(Palette.secondary)
-                    Text(ClaudeSetup.helperCommand)
-                        .font(Retro.body(15))
-                        .foregroundStyle(Palette.phosphor)
-                    HStack(spacing: 8) {
-                        TerminalButton(title: "WRITE SETTINGS") {
-                            store.enableLimits()
-                            previewingSetup = false
-                        }
-                        TerminalButton(title: "CANCEL") { previewingSetup = false }
+    @ViewBuilder private var statusMessage: some View {
+        switch store.setupStatus {
+        case .notConfigured:
+            if confirmingConnect {
+                Text("Runway adds one line to Claude Code's settings so it can read your usage. Your current settings are saved first. You can disconnect at any time.")
+                    .font(Retro.body(17))
+                    .foregroundStyle(Palette.phosphor)
+                HStack(spacing: 8) {
+                    TerminalButton(title: "CONNECT") {
+                        store.connect()
+                        confirmingConnect = false
                     }
-                } else {
-                    TerminalButton(title: "ENABLE LIMITS") { previewingSetup = true }
+                    TerminalButton(title: "NOT NOW") { confirmingConnect = false }
                 }
-                if let error = store.setupError {
-                    Text(error)
-                        .font(Retro.body(17))
-                        .foregroundStyle(Palette.alert)
-                }
-            case .installed:
-                Text("waiting for the first Claude response")
+            } else {
+                Text("Not connected")
+                    .foregroundStyle(Palette.phosphor)
+                Text("Connect to see your 5-hour and weekly usage here.")
+                    .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
-            case .otherStatusLineSet:
-                Text("you already have a status line, so Runway leaves it alone")
-                    .foregroundStyle(Palette.secondary)
+                TerminalButton(title: "CONNECT CLAUDE CODE") { confirmingConnect = true }
             }
+        case .installed:
+            Text("Connected")
+                .foregroundStyle(Palette.phosphor)
+            Text("Usage appears after Claude's next reply.")
+                .font(Retro.body(17))
+                .foregroundStyle(Palette.secondary)
+        case .otherStatusLineSet:
+            Text("Claude Code's status line is used by another tool.")
+                .font(Retro.body(17))
+                .foregroundStyle(Palette.secondary)
+            Text("Runway can't connect without replacing it, so it left it alone.")
+                .font(Retro.body(17))
+                .foregroundStyle(Palette.secondary)
         }
     }
 }
@@ -152,9 +162,9 @@ struct WindowRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 10) {
-                Text(window.label)
+                Text(windowName)
                     .foregroundStyle(Palette.secondary)
-                    .frame(width: 28, alignment: .leading)
+                    .frame(width: 60, alignment: .leading)
                 Text(Bar.text(percent: percent ?? 0))
                     .foregroundStyle(barColor)
                 Spacer()
@@ -164,7 +174,15 @@ struct WindowRow: View {
             Text(resetLabel)
                 .font(Retro.body(17))
                 .foregroundStyle(Palette.secondary)
-                .padding(.leading, 38)
+                .padding(.leading, 70)
+        }
+    }
+
+    private var windowName: String {
+        switch window.label {
+        case "5H": "5 hours"
+        case "WK": "Week"
+        default: window.label
         }
     }
 
@@ -175,13 +193,13 @@ struct WindowRow: View {
     }
 
     private var percentLabel: String {
-        guard let percent else { return "RESET" }
+        guard let percent else { return "reset" }
         return "\(Int(percent))%"
     }
 
     private var resetLabel: String {
         guard let resetsAt = window.resetsAt else { return "reset time unknown" }
-        if resetsAt <= now { return "window reset, waiting for next response" }
-        return "resets " + resetsAt.formatted(.relative(presentation: .named))
+        if resetsAt <= now { return "Reset. Updates after your next reply." }
+        return "Resets " + resetsAt.formatted(.relative(presentation: .named))
     }
 }

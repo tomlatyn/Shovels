@@ -10,5 +10,6 @@ struct MenuBarLabel: View {
             Text(store.menuBarText)
                 .font(Retro.body(17))
         }
+        .help(store.menuBarHelp)
     }
 }

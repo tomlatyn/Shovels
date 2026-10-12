@@ -7,7 +7,7 @@ final class UsageStore {
     private(set) var snapshot: ProviderSnapshot?
     private(set) var setupStatus: ClaudeSetup.Status = .notConfigured
     private(set) var now: Date = .now
-    private(set) var setupError: String?
+    private(set) var connectError: String?
     private(set) var launchAtLogin = false
     private(set) var loginError: String?
     private var timer: Timer?
@@ -33,12 +33,22 @@ final class UsageStore {
         Task { await refresh() }
     }
 
-    func enableLimits() {
+    func connect() {
         do {
-            try ClaudeSetup.enable()
-            setupError = nil
+            try ClaudeSetup.connect()
+            connectError = nil
         } catch {
-            setupError = error.localizedDescription
+            connectError = error.localizedDescription
+        }
+        refreshNow()
+    }
+
+    func disconnect() {
+        do {
+            try ClaudeSetup.disconnect()
+            connectError = nil
+        } catch {
+            connectError = error.localizedDescription
         }
         refreshNow()
     }
@@ -53,13 +63,32 @@ final class UsageStore {
         refreshNow()
     }
 
+    /// The 5-hour percentage, or nil when there's no fresh reading.
+    private var freshFiveHourPercent: Double? {
+        guard let snapshot, !snapshot.isStale(at: now),
+              let fiveHour = snapshot.windows.first(where: { $0.label == "5H" }) else {
+            return nil
+        }
+        return fiveHour.usedPercent
+    }
+
     /// Menu bar text: the 5-hour percentage, or "?" when there's no fresh reading.
     var menuBarText: String {
-        guard let snapshot, !snapshot.isStale(at: now),
-              let fiveHour = snapshot.windows.first(where: { $0.label == "5H" }),
-              let percent = fiveHour.usedPercent else {
-            return "?"
+        freshFiveHourPercent.map { "\(Int($0))%" } ?? "?"
+    }
+
+    /// Tooltip for the menu bar item. Says why there's no number yet.
+    var menuBarHelp: String {
+        if freshFiveHourPercent != nil {
+            return "Claude Code: 5-hour limit used"
         }
-        return "\(Int(percent))%"
+        switch setupStatus {
+        case .notConfigured:
+            return "Connect Claude Code in Runway to see your limits"
+        case .installed:
+            return "Waiting for Claude Code's next reply"
+        case .otherStatusLineSet:
+            return "Claude Code's status line belongs to another tool"
+        }
     }
 }
