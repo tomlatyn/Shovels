@@ -143,9 +143,9 @@ struct ProviderSnapshot: Sendable {
 
 ## 7. Setup flow
 
-1. First launch shows the Sources screen. The app detects what it can see locally (for example, "found `~/.codex`, 30 rollouts") and proposes a source for each provider.
-2. Pick a source per provider. Optional API-spend keys go to the Keychain.
-3. Connecting the Claude Code status line helper shows the exact lines it would add to `~/.claude/settings.json`, and asks before writing.
+1. **Empty state, not a wizard.** When no provider is tracked, the dashboard shows one screen: the four providers, each with what the app found on disk (for example, "found `~/.codex`") and a Track toggle. Cursor and Antigravity are listed as "later" and disabled in the MVP. Detection only checks that a folder exists. It never reads the contents.
+2. **Start tracking** turns on the toggled providers and shows the dashboard. The empty state is derived from the settings (no tracked providers), so no onboarding state needs storing. To get back to it, untrack everything, or open Sources in Settings.
+3. **Claude limits are a separate, explicit step.** Tracking Claude Code shows token totals and "limits unavailable". A "Show limits" button shows the exact lines it would add to `~/.claude/settings.json`, and writes only after confirmation.
 4. Cursor's opt-in reads its local token only after an explicit confirmation.
 5. Done: the menu bar shows the pinned providers.
 
