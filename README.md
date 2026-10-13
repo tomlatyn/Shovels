@@ -1,5 +1,9 @@
 # Shovels
 
+<p align="center">
+  <img src="docs/icon.png" width="128" alt="Shovels icon">
+</p>
+
 A macOS menu bar app that shows your usage limits for Claude Code, Codex, Antigravity and Cursor in a retro CRT-style dashboard.
 
 Shovels runs each tool's own command line program in the background, reads the usage numbers it reports, and shows them as bars with reset countdowns. It can warn you when a limit gets close, estimate when you will run out at your current pace, and draw a small history line for each window. It is a personal-use app: native SwiftUI, not sandboxed, not notarized.
