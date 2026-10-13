@@ -15,12 +15,13 @@ struct DashboardView: View {
                 }
                 .foregroundStyle(Palette.phosphor)
                 Spacer()
-                Text(store.now, format: .dateTime.hour().minute())
+                Text(store.lastChecked.map { "Checked " + $0.formatted(.relative(presentation: .named)) } ?? "Checking…")
                     .font(Retro.body(18))
                     .foregroundStyle(Palette.secondary)
             }
             ForEach(store.visibleProviders, id: \.self) { provider in
-                ProviderCard(provider: provider, state: store.state(for: provider), now: store.now)
+                ProviderCard(provider: provider, state: store.state(for: provider), now: store.now,
+                             isMain: store.mainProvider == provider)
             }
             if store.visibleProviders.isEmpty {
                 Text("All providers are hidden. Turn one on below.")
@@ -46,23 +47,28 @@ struct DashboardView: View {
                 Spacer()
                 TerminalButton(title: "QUIT") { NSApplication.shared.terminate(nil) }
             }
-            HStack(spacing: 6) {
-                Text("SHOW")
+            VStack(alignment: .leading, spacing: 2) {
+                Text("SHOW ON / OFF")
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
-                ForEach(ProviderID.allCases, id: \.self) { provider in
-                    TerminalButton(title: provider.shortName, filled: !store.hidden.contains(provider)) {
-                        store.toggleVisible(provider)
+                HStack(spacing: 6) {
+                    ForEach(ProviderID.allCases, id: \.self) { provider in
+                        let on = !store.hidden.contains(provider)
+                        TerminalButton(title: "\(provider.shortName) \(on ? "ON" : "OFF")", filled: on) {
+                            store.toggleVisible(provider)
+                        }
                     }
                 }
             }
-            HStack(spacing: 6) {
-                Text("MENU")
+            VStack(alignment: .leading, spacing: 2) {
+                Text("MENU BAR SHOWS")
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
-                ForEach(ProviderID.allCases, id: \.self) { provider in
-                    TerminalButton(title: provider.shortName, filled: store.mainProvider == provider) {
-                        store.setMain(provider)
+                HStack(spacing: 6) {
+                    ForEach(ProviderID.allCases, id: \.self) { provider in
+                        TerminalButton(title: provider.shortName, filled: store.mainProvider == provider) {
+                            store.setMain(provider)
+                        }
                     }
                 }
             }
@@ -82,6 +88,7 @@ struct ProviderCard: View {
     let provider: ProviderID
     let state: ProviderState
     let now: Date
+    var isMain = false
 
     private var snapshot: ProviderSnapshot? { state.snapshot }
     private var hasWindows: Bool { !(snapshot?.windows.isEmpty ?? true) }
@@ -99,6 +106,13 @@ struct ProviderCard: View {
                     .font(Retro.title(9))
                     .foregroundStyle(accent)
                 Spacer()
+                if isMain {
+                    Text("MENU BAR")
+                        .font(Retro.body(16))
+                        .foregroundStyle(Palette.panel)
+                        .padding(.horizontal, 4)
+                        .background(Palette.phosphor)
+                }
                 if let plan = snapshot?.plan {
                     Text(plan)
                         .foregroundStyle(Palette.secondary)
@@ -111,16 +125,11 @@ struct ProviderCard: View {
                 }
             } else if let error = state.error {
                 Text(error)
-                    .foregroundStyle(Palette.alert)
+                    .font(state.outage ? Retro.body(17) : Retro.body(20))
+                    .foregroundStyle(state.outage ? Palette.secondary : Palette.alert)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("Checking usage…")
-                    .foregroundStyle(Palette.secondary)
-            }
-
-            if let asOf = snapshot?.asOf {
-                Text("Checked \(asOf.formatted(.relative(presentation: .named)))")
-                    .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
             }
 
@@ -132,7 +141,7 @@ struct ProviderCard: View {
             }
 
             if let tokens = snapshot?.tokensLast5h {
-                Text("Last 5 hours: \(tokens.formatted(.number.notation(.compactName))) tokens")
+                Text("Tokens, last 5 hours: \(tokens.formatted(.number.notation(.compactName)))")
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
             }
@@ -169,18 +178,29 @@ struct WindowRow: View {
     let accent: Color
     let now: Date
 
+    /// Names that say how long the window is, so "Session" never has to mean three things.
+    private var displayName: String {
+        switch window.minutes {
+        case 300: "5-hour"
+        case 10080: "Weekly"
+        case 43200: "Monthly"
+        default: window.title
+        }
+    }
+
     private var expired: Bool { (window.resetsAt ?? .distantFuture) <= now }
     private var percent: Double? { expired ? nil : window.usedPercent }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 10) {
-                Text(window.title)
+                Text(displayName)
                     .foregroundStyle(Palette.secondary)
                     .frame(width: 80, alignment: .leading)
                 CellBar(percent: percent, color: barColor)
                 Spacer()
                 Text(percentLabel)
+                    .fixedSize()
                     .foregroundStyle(percent == nil ? Palette.secondary : Palette.phosphor)
             }
             Text(resetLabel)
@@ -229,7 +249,7 @@ struct WindowRow: View {
 struct CellBar: View {
     let percent: Double?
     let color: Color
-    var cells = 10
+    var cells = 20
 
     var body: some View {
         let filled = min(cells, max(0, Int(((percent ?? 0) / 100 * Double(cells)).rounded(.down))))
@@ -237,7 +257,7 @@ struct CellBar: View {
             ForEach(0..<cells, id: \.self) { index in
                 Rectangle()
                     .fill(index < filled ? color : Palette.border)
-                    .frame(width: 9, height: 14)
+                    .frame(width: 7, height: 14)
             }
         }
     }

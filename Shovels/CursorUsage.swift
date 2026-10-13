@@ -11,7 +11,7 @@ enum CursorUsageError: Error, Sendable {
         case .notInstalled:
             "Cursor's agent CLI isn't installed. Install it, then sign in with 'agent login' in Terminal."
         case .unavailable:
-            "Cursor's usage service is down right now. Shovels retries on its own. Status: cursor.com/dashboard?tab=usage"
+            "Cursor is down right now. Retrying automatically. Status: cursor.com/dashboard?tab=usage"
         case .noUsage(let detail):
             detail
         }

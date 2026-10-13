@@ -13,6 +13,7 @@ final class UsageStore {
     /// The provider whose percentage shows in the menu bar.
     private(set) var mainProvider: ProviderID
     private(set) var isChecking = false
+    private(set) var lastChecked: Date?
     private(set) var now: Date = .now
     private(set) var launchAtLogin = false
     private(set) var loginError: String?
@@ -54,6 +55,7 @@ final class UsageStore {
             states[provider] = Self.merge(result, into: state(for: provider))
         }
         now = .now
+        lastChecked = checkedAt
         launchAtLogin = LaunchAtLogin.isEnabled
         // A provider that was working and now fails is probably an outage. Retry in a minute.
         // Setup problems, such as a missing CLI or a trust prompt, don't retry on their own.
@@ -112,7 +114,7 @@ final class UsageStore {
     /// A failed check keeps the last good snapshot and records the error.
     private static func merge(_ fresh: ProviderState, into old: ProviderState) -> ProviderState {
         if fresh.snapshot != nil { return fresh }
-        return ProviderState(snapshot: old.snapshot, error: fresh.error)
+        return ProviderState(snapshot: old.snapshot, error: fresh.error, outage: fresh.outage)
     }
 
     nonisolated private static func load(_ provider: ProviderID, at now: Date) async -> ProviderState {
@@ -127,9 +129,14 @@ final class UsageStore {
                 }
                 return ProviderState(snapshot: snapshot, error: nil)
             } catch {
-                return ProviderState(snapshot: nil, error: message(for: error))
+                return ProviderState(snapshot: nil, error: message(for: error), outage: isOutage(error))
             }
         }.value
+    }
+
+    nonisolated private static func isOutage(_ error: Error) -> Bool {
+        if let error = error as? CursorUsageError, case .unavailable = error { return true }
+        return false
     }
 
     nonisolated private static func message(for error: Error) -> String {

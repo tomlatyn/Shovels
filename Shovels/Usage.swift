@@ -55,6 +55,8 @@ struct ProviderSnapshot: Sendable, Equatable {
 struct ProviderState: Sendable, Equatable {
     var snapshot: ProviderSnapshot?
     var error: String?
+    /// True when the provider's service is down, as opposed to a setup problem. Shown in a calmer style.
+    var outage: Bool = false
 }
 
 enum Bar {
