@@ -59,39 +59,40 @@ struct DashboardView: View {
 
     /// Settings replace the cards while open, so the window never grows past the screen.
     private var settingsPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("SHOW ON / OFF")
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("SHOW")
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
-                HStack(spacing: 6) {
-                    ForEach(ProviderID.allCases, id: \.self) { provider in
-                        let on = !store.hidden.contains(provider)
-                        TerminalButton(title: "\(provider.shortName) \(on ? "ON" : "OFF")", filled: on) {
-                            store.toggleVisible(provider)
-                        }
+                ForEach(ProviderID.allCases, id: \.self) { provider in
+                    let on = !store.hidden.contains(provider)
+                    TerminalButton(title: "\(provider.displayName)  \(on ? "ON" : "OFF")", filled: on) {
+                        store.toggleVisible(provider)
                     }
                 }
             }
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("MENU BAR SHOWS")
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)
-                HStack(spacing: 6) {
-                    ForEach(ProviderID.allCases, id: \.self) { provider in
-                        TerminalButton(title: provider.shortName, filled: store.mainProvider == provider) {
-                            store.setMain(provider)
-                        }
+                ForEach(ProviderID.allCases, id: \.self) { provider in
+                    TerminalButton(title: provider.displayName, filled: store.mainProvider == provider) {
+                        store.setMain(provider)
                     }
                 }
             }
-            TerminalButton(title: store.launchAtLogin ? "OPEN AT LOGIN: ON" : "OPEN AT LOGIN: OFF") {
-                store.setLaunchAtLogin(!store.launchAtLogin)
-            }
-            if let error = store.loginError {
-                Text(error)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("STARTUP")
                     .font(Retro.body(17))
-                    .foregroundStyle(Palette.alert)
+                    .foregroundStyle(Palette.secondary)
+                TerminalButton(title: store.launchAtLogin ? "OPEN AT LOGIN: ON" : "OPEN AT LOGIN: OFF") {
+                    store.setLaunchAtLogin(!store.launchAtLogin)
+                }
+                if let error = store.loginError {
+                    Text(error)
+                        .font(Retro.body(17))
+                        .foregroundStyle(Palette.alert)
+                }
             }
         }
         .padding(10)

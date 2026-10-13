@@ -4,25 +4,33 @@ import AppKit
 enum ProviderGlyph {
     /// 8x8 grids, "#" is filled.
     static let spark = [
-        "...##...",
-        "...##...",
-        "..####..",
-        "########",
-        "########",
-        "..####..",
-        "...##...",
-        "...##...",
+        ".....##.....",
+        ".....##.....",
+        "....####....",
+        "..##.##.##..",
+        "..########..",
+        "############",
+        "############",
+        "..########..",
+        "..##.##.##..",
+        "....####....",
+        ".....##.....",
+        ".....##.....",
     ]
 
     static let chevron = [
-        "........",
-        ".#......",
-        "..#.....",
-        "...#....",
-        "..#.....",
-        ".#......",
-        ".....###",
-        "........",
+        "............",
+        "..#.........",
+        "...#........",
+        "....#.......",
+        ".....#......",
+        "....#.......",
+        "...#........",
+        "..#.........",
+        "............",
+        "......#####.",
+        "............",
+        "............",
     ]
 
     /// Shovel for the app itself: a diagonal handle running into a spade at the bottom left.
@@ -39,25 +47,33 @@ enum ProviderGlyph {
 
     /// Antigravity: an arch with a crossbar.
     static let arch = [
-        "...##...",
-        "..#..#..",
-        "..#..#..",
-        ".#....#.",
-        ".######.",
-        ".#....#.",
-        "#......#",
-        "#......#",
+        "....####....",
+        "...##..##...",
+        "..##....##..",
+        "..#......#..",
+        "..########..",
+        "..#......#..",
+        ".##......##.",
+        ".#........#.",
+        "##........##",
+        "#..........#",
+        "#..........#",
+        "............",
     ]
 
     static let pointer = [
-        "#.......",
-        "##......",
-        "###.....",
-        "####....",
-        "#####...",
-        "######..",
-        "###.##..",
-        "##...##.",
+        "##..........",
+        "###.........",
+        "####........",
+        "#####.......",
+        "######......",
+        "#######.....",
+        "########....",
+        "#####.......",
+        "###..###....",
+        "##....##....",
+        "#.....##....",
+        "............",
     ]
 
     static func grid(for provider: ProviderID) -> [String] {
@@ -75,7 +91,7 @@ enum ProviderGlyph {
 
     /// Draws a grid as a template image, so the menu bar and the dashboard tint it.
     static func image(rows: [String], pointSize: CGFloat = 16) -> NSImage {
-        let cell = pointSize / CGFloat(rows.count)
+        let cell = pointSize / CGFloat(max(rows.count, rows.first?.count ?? 1))
         let image = NSImage(size: NSSize(width: pointSize, height: pointSize), flipped: true) { _ in
             NSColor.black.setFill()
             for (row, line) in rows.enumerated() {
