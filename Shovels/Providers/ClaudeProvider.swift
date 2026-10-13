@@ -10,10 +10,11 @@ import Foundation
 /// Claude Code usage: limits from the official CLI's /usage, tokens from local logs.
 enum ClaudeProvider {
     static func snapshot(now: Date) throws -> ProviderSnapshot {
-        let windows = try ClaudeUsageCLI.fetch(now: now)
+        let path = try CLILocator.locate("claude")
+        let windows = try ClaudeUsageCLI.fetch(path: path, now: now)
         return ProviderSnapshot(
             provider: .claudeCode,
-            plan: ClaudeUsageCLI.plan(),
+            plan: ClaudeUsageCLI.plan(path: path),
             windows: windows,
             asOf: now,
             tokensLast5h: tokensLast5h(now: now)
@@ -60,9 +61,9 @@ enum ClaudeProvider {
                       let stamp = object["timestamp"] as? String,
                       let date = formatter.date(from: stamp), date >= cutoff,
                       let message = object["message"] as? [String: Any],
-                      let usage = message["usage"] as? [String: Any] else { continue }
+                      let usage = message["usage"] as? [String: Any],
+                      let key = message["id"] as? String ?? object["uuid"] as? String else { continue }
 
-                let key = message["id"] as? String ?? object["uuid"] as? String ?? UUID().uuidString
                 tokensByMessage[key] = (usage["input_tokens"] as? Int ?? 0) + (usage["output_tokens"] as? Int ?? 0)
             }
         }

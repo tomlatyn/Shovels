@@ -7,65 +7,52 @@
 
 import Foundation
 
-enum CursorUsageError: Error, Sendable {
-    case notInstalled
+enum CursorUsageError: ProviderFailure {
     /// Cursor's usage service answered with an error. This is an outage on Cursor's side, not a setup problem.
     case unavailable
-    case noUsage(String)
+    /// Cursor answered with something Shovels can't read.
+    case unreadable
 
-    var message: String {
+    var errorDescription: String? {
         switch self {
-        case .notInstalled:
-            "Cursor's agent CLI isn't installed. Install it, then sign in with 'agent login' in Terminal."
         case .unavailable:
             "Cursor is down right now. Retrying automatically. Status: cursor.com/dashboard?tab=usage"
-        case .noUsage(let detail):
-            detail
+        case .unreadable:
+            "Cursor usage couldn't be read right now. Shovels will try again on its own."
         }
     }
+
+    var needsSetup: Bool { false }
 }
 
 /// Reads Cursor usage from the agent CLI's /usage screen, the same screen you see in Terminal.
 /// Cursor asks you to trust a folder before it runs. Shovels never answers that question. You answer it once, in Terminal.
 enum CursorUsage {
-    static let candidatePaths = [
-        "\(NSHomeDirectory())/.local/bin/agent",
-        "/opt/homebrew/bin/agent",
-        "/usr/local/bin/agent",
-    ]
-
     /// Empty folder Shovels runs the agent in. You trust it once, in Terminal.
     static var workspace: URL {
         ShovelsPaths.support.appending(path: "cursor-workspace", directoryHint: .isDirectory)
     }
 
-    /// What users see when Cursor answers with something Shovels can't read. Shows up in the Cursor card.
-    static let unreadable = "Cursor usage couldn't be read right now. Shovels will try again on its own."
-
     static let trustMessage = "Cursor needs this folder trusted. Run 'agent' in Terminal from ~/Library/Application Support/Shovels/cursor-workspace, choose Trust, then refresh."
+    static let notReadyMessage = "Cursor's agent didn't reach its prompt. Run 'agent login' in Terminal and sign in, then refresh."
 
     static func snapshot(now: Date) throws -> ProviderSnapshot {
-        guard let path = candidatePaths.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
-            throw CursorUsageError.notInstalled
-        }
+        let path = try CLILocator.locate("agent")
         try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: true)
-        do {
-            let screen = try TerminalSession.run(
-                path: path,
-                directory: workspace,
-                command: "/usage",
-                startupSeconds: 12,
-                replySeconds: 30,
-                blocked: { text in
-                    text.contains("Trust this workspace") || text.contains("Workspace Trust Required") ? trustMessage : nil
-                },
-                ready: { $0.contains("Plan, search") },
-                replyUntil: { text in text.contains("Usage •") || text.contains("Failed to load usage data") }
-            )
-            return try parse(screen, now: now)
-        } catch TerminalSessionError.blockedByPrompt(let message) {
-            throw CursorUsageError.noUsage(message)
-        }
+        let screen = try TerminalSession.run(
+            path: path,
+            directory: workspace,
+            command: "/usage",
+            startupSeconds: 15,
+            replySeconds: 30,
+            blocked: { text in
+                text.contains("Trust this workspace") || text.contains("Workspace Trust Required") ? trustMessage : nil
+            },
+            ready: { $0.contains("Plan, search") },
+            notReady: notReadyMessage,
+            replyUntil: { text in text.contains("Usage •") || text.contains("Failed to load usage data") }
+        )
+        return try parse(screen, now: now)
     }
 
     /// Reads the plan and the Included, Auto, and API usage from the /usage panel.
@@ -75,7 +62,7 @@ enum CursorUsage {
             if screen.contains("Failed to load usage data") {
                 throw CursorUsageError.unavailable
             }
-            throw CursorUsageError.noUsage(unreadable)
+            throw CursorUsageError.unreadable
         }
         let resets = screen.matches(of: #/Resets (\w{3}) (\d{1,2})/#).last.flatMap { match -> Date? in
             let formatter = DateFormatter()
@@ -98,7 +85,7 @@ enum CursorUsage {
             }
         }
         guard !windows.isEmpty else {
-            throw CursorUsageError.noUsage(unreadable)
+            throw CursorUsageError.unreadable
         }
         return ProviderSnapshot(provider: .cursor, plan: plan, windows: windows, asOf: now, tokensLast5h: nil)
     }

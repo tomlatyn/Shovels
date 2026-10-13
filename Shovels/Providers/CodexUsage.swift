@@ -7,16 +7,24 @@
 
 import Foundation
 
-enum CodexUsageError: Error, Sendable {
-    case notInstalled
+enum CodexUsageError: ProviderFailure {
     case timedOut
     case noReply
+    /// Codex answered with an error, such as a sign-in problem. The text is Codex's own.
+    case server(String)
 
-    var message: String {
+    var errorDescription: String? {
         switch self {
-        case .notInstalled: "Codex isn't installed where Shovels can find it."
-        case .timedOut: "Codex took too long to answer."
-        case .noReply: "Codex didn't return rate limits. Check that you're signed in to Codex."
+        case .timedOut: "Codex took too long to answer. Shovels will try again."
+        case .noReply: "Codex didn't return rate limits. Run 'codex login' in Terminal and check that you're signed in."
+        case .server(let message): "Codex said: \(message)"
+        }
+    }
+
+    var needsSetup: Bool {
+        switch self {
+        case .timedOut: false
+        case .noReply, .server: true
         }
     }
 }
@@ -24,69 +32,76 @@ enum CodexUsageError: Error, Sendable {
 /// Reads Codex's rate limits through `codex app-server`, the same protocol the Codex app uses.
 /// Codex does the sign-in. Shovels never sees the login.
 enum CodexUsage {
-    static let candidatePaths = ["/opt/homebrew/bin/codex", "/usr/local/bin/codex"]
-
     static func snapshot(now: Date) throws -> ProviderSnapshot {
-        guard let path = candidatePaths.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
-            throw CodexUsageError.notInstalled
-        }
+        let path = try CLILocator.locate("codex")
         let reply = try request(path: path)
         return try parse(reply, now: now)
     }
 
     /// Starts the app server, initializes it, and asks for the account's rate limits.
     private static func request(path: String) throws -> [String: Any] {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: path)
-        process.arguments = ["app-server"]
-        process.currentDirectoryURL = ShovelsPaths.home
-        var environment = ProcessInfo.processInfo.environment
-        environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
-        process.environment = environment
-
-        let input = Pipe()
-        let output = Pipe()
-        process.standardInput = input
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-        try process.run()
+        var inPipe: [Int32] = [0, 0]
+        var outPipe: [Int32] = [0, 0]
+        guard pipe(&inPipe) == 0 else { throw ChildProcessError.couldNotStart("pipe failed") }
+        guard pipe(&outPipe) == 0 else {
+            inPipe.forEach { close($0) }
+            throw ChildProcessError.couldNotStart("pipe failed")
+        }
+        let child: ChildProcess
+        do {
+            child = try ChildProcess.spawn(
+                path: path, arguments: ["app-server"], directory: ShovelsPaths.home,
+                environment: CLILocator.environment(for: path),
+                input: .descriptor(inPipe[0]), output: .descriptor(outPipe[1]), error: .null
+            )
+        } catch {
+            (inPipe + outPipe).forEach { close($0) }
+            throw error
+        }
+        close(inPipe[0])
+        close(outPipe[1])
         defer {
-            if process.isRunning { process.terminate() }
+            close(inPipe[1])
+            close(outPipe[0])
+            child.stop()
         }
 
-        let killer = DispatchWorkItem {
-            if process.isRunning { process.terminate() }
-        }
-        DispatchQueue.global().asyncAfter(deadline: .now() + 20, execute: killer)
-        defer { killer.cancel() }
-
-        let writer = input.fileHandleForWriting
+        let writer = inPipe[1]
         send(["jsonrpc": "2.0", "id": 1, "method": "initialize",
               "params": ["clientInfo": ["name": "shovels", "version": "0.1.0"]]], to: writer)
         send(["jsonrpc": "2.0", "method": "initialized"], to: writer)
         send(["jsonrpc": "2.0", "id": 2, "method": "account/rateLimits/read"], to: writer)
 
-        // Read until the reply with id 2 arrives. If the server exits first, the read ends.
-        let reader = output.fileHandleForReading
-        var buffer = Data()
-        while true {
-            let chunk = reader.availableData
-            if chunk.isEmpty { break }
-            buffer.append(chunk)
-            for line in String(decoding: buffer, as: UTF8.self).components(separatedBy: "\n") where !line.isEmpty {
-                guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
+        // Read lines until the reply with id 2 arrives, the server exits, or 20 seconds pass.
+        let deadline = Date().addingTimeInterval(20)
+        var pending = Data()
+        while Date() < deadline {
+            var descriptor = pollfd(fd: outPipe[0], events: Int16(POLLIN), revents: 0)
+            guard poll(&descriptor, 1, 100) > 0 else { continue }
+            var buffer = [UInt8](repeating: 0, count: 65_536)
+            let count = read(outPipe[0], &buffer, buffer.count)
+            if count <= 0 { throw CodexUsageError.noReply }
+            pending.append(contentsOf: buffer[0..<count])
+            while let newline = pending.firstIndex(of: 0x0A) {
+                let line = pending[pending.startIndex..<newline]
+                pending.removeSubrange(pending.startIndex...newline)
+                guard let object = try? JSONSerialization.jsonObject(with: line) as? [String: Any],
                       let id = object["id"] as? NSNumber, id.intValue == 2 else { continue }
+                if let error = object["error"] as? [String: Any] {
+                    throw CodexUsageError.server(error["message"] as? String ?? "unknown error")
+                }
                 return object
             }
         }
-        throw CodexUsageError.noReply
+        throw CodexUsageError.timedOut
     }
 
-    private static func send(_ message: [String: Any], to handle: FileHandle) {
+    private static func send(_ message: [String: Any], to descriptor: Int32) {
         guard var data = try? JSONSerialization.data(withJSONObject: message) else { return }
         data.append(0x0A)
-        // try? because a closed pipe must not crash the app. The check then reports no reply.
-        try? handle.write(contentsOf: data)
+        // Shovels ignores SIGPIPE, so a server that already exited only makes this write fail.
+        // The read loop then reports no reply.
+        data.withUnsafeBytes { _ = write(descriptor, $0.baseAddress, $0.count) }
     }
 
     /// Reads the primary and secondary windows from a `rateLimits` reply.

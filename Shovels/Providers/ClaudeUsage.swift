@@ -7,20 +7,26 @@
 
 import Foundation
 
-enum ClaudeUsageError: Error, Sendable {
-    case notInstalled
+enum ClaudeUsageError: ProviderFailure {
     case timedOut
     /// Claude Code answered, but not with usage. The first line says why, such as a sign-in prompt.
     case noUsage(firstLine: String)
 
-    var message: String {
+    var errorDescription: String? {
         switch self {
-        case .notInstalled:
-            "Claude Code isn't installed where Shovels can find it."
         case .timedOut:
-            "Claude Code took too long to answer."
+            "Claude Code took too long to answer. Shovels will try again."
         case .noUsage(let firstLine):
-            firstLine.isEmpty ? "Claude Code didn't return usage." : "Claude Code said: \(firstLine)"
+            firstLine.isEmpty
+                ? "Claude Code didn't return usage. Run 'claude' in Terminal and check that you're signed in."
+                : "Claude Code said: \(firstLine)"
+        }
+    }
+
+    var needsSetup: Bool {
+        switch self {
+        case .timedOut: false
+        case .noUsage: true
         }
     }
 }
@@ -28,61 +34,42 @@ enum ClaudeUsageError: Error, Sendable {
 /// Reads the same numbers as Claude Code's /usage panel by running the official CLI.
 /// Shovels never sees or stores the login token.
 enum ClaudeUsageCLI {
-    static let candidatePaths = ["/opt/homebrew/bin/claude", "/usr/local/bin/claude"]
+    /// Keeps each check out of `claude --resume` and skips starting MCP servers.
+    static let quietFlags = ["--no-session-persistence", "--strict-mcp-config"]
 
-    static func binaryPath() -> String? {
-        candidatePaths.first { FileManager.default.isExecutableFile(atPath: $0) }
-    }
-
-    static func fetch(now: Date) throws -> [UsageWindow] {
-        guard let path = binaryPath() else { throw ClaudeUsageError.notInstalled }
-        let output = try run(path, arguments: ["-p", "/usage"])
-        let windows = parse(output, now: now)
+    static func fetch(path: String, now: Date) throws -> [UsageWindow] {
+        var output = try run(path, arguments: ["-p", "/usage"] + quietFlags)
+        // Older Claude Code versions don't know the quiet flags. Retry without them.
+        if output.status != 0, (output.stderr + output.stdout).localizedCaseInsensitiveContains("unknown option") {
+            output = try run(path, arguments: ["-p", "/usage"])
+        }
+        let windows = parse(output.stdout, now: now)
         if windows.isEmpty {
-            let firstLine = output.components(separatedBy: .newlines).first { !$0.isEmpty } ?? ""
-            throw ClaudeUsageError.noUsage(firstLine: firstLine)
+            throw ClaudeUsageError.noUsage(firstLine: firstLine(output.stdout) ?? firstLine(output.stderr) ?? "")
         }
         return windows
     }
 
     /// The subscription tier, such as "pro" or "max", from `claude auth status --json`.
     /// Only that field is read. The email and organization in the output are never kept.
-    static func plan() -> String? {
-        guard let path = binaryPath(),
-              let output = try? run(path, arguments: ["auth", "status", "--json"]),
-              let object = try? JSONSerialization.jsonObject(with: Data(output.utf8)) as? [String: Any],
+    static func plan(path: String) -> String? {
+        guard let output = try? run(path, arguments: ["auth", "status", "--json"]),
+              let object = try? JSONSerialization.jsonObject(with: Data(output.stdout.utf8)) as? [String: Any],
               let type = object["subscriptionType"] as? String else { return nil }
         return type.uppercased()
     }
 
-    /// Runs the claude CLI. `-p /usage` sends no model request, so it doesn't move the limits.
-    private static func run(_ path: String, arguments: [String]) throws -> String {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: path)
-        process.arguments = arguments
-        process.currentDirectoryURL = ShovelsPaths.home
-        var environment = ProcessInfo.processInfo.environment
-        // Apps started from Finder don't get the shell's PATH, and the claude script needs node.
-        environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
-        process.environment = environment
+    /// Runs the claude CLI. `-p /usage` is a local command, so it doesn't send a model request.
+    private static func run(_ path: String, arguments: [String]) throws -> CommandRunner.Output {
+        let output = try CommandRunner.run(path: path, arguments: arguments, directory: ShovelsPaths.home, timeout: 30)
+        if output.timedOut { throw ClaudeUsageError.timedOut }
+        return output
+    }
 
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-        try process.run()
-
-        let killer = DispatchWorkItem {
-            if process.isRunning { process.terminate() }
-        }
-        DispatchQueue.global().asyncAfter(deadline: .now() + 30, execute: killer)
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        killer.cancel()
-
-        if process.terminationReason == .uncaughtSignal {
-            throw ClaudeUsageError.timedOut
-        }
-        return String(decoding: data, as: UTF8.self)
+    private static func firstLine(_ text: String) -> String? {
+        text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .first { !$0.isEmpty }
     }
 
     /// Parses lines such as "Current session: 20% used · resets Oct 13 at 5am (Europe/Prague)".
@@ -100,31 +87,36 @@ enum ClaudeUsageCLI {
         return windows
     }
 
-    /// Parses reset text such as "Oct 13 at 5am (Europe/Prague)". Returns nil if it doesn't match.
+    /// Parses reset text such as "Oct 13 at 5am (Europe/Prague)", or "4:30pm (Europe/Prague)" with no date,
+    /// which means the next time the clock shows that time. Returns nil if it doesn't match.
     static func resetDate(_ text: String, now: Date) -> Date? {
-        guard let parts = text.firstMatch(of: #/([A-Za-z]{3}) (\d{1,2}) at (\d{1,2})(?::(\d{2}))?\s*(am|pm)/#) else {
+        guard let parts = text.firstMatch(of: #/(?:([A-Za-z]{3}) (\d{1,2}),? (?:at )?)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)/#) else {
             return nil
         }
         let zone = text.firstMatch(of: #/\(([^)]+)\)/#).flatMap { TimeZone(identifier: String($0.1)) } ?? .current
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = zone
-        var year = calendar.component(.year, from: now)
+        guard var hour = Int(parts.3), hour >= 1, hour <= 12 else { return nil }
+        hour = hour % 12 + (parts.5 == "pm" ? 12 : 0)
+        let minute = parts.4.flatMap { Int($0) } ?? 0
 
-        func date(year: Int) -> Date? {
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.timeZone = zone
-            formatter.dateFormat = "MMM d yyyy h:mm a"
-            let minute = parts.4.map(String.init) ?? "00"
-            return formatter.date(from: "\(parts.1) \(parts.2) \(year) \(parts.3):\(minute) \(parts.5.uppercased())")
+        guard let monthName = parts.1, let day = parts.2.flatMap({ Int($0) }) else {
+            // Time only: today at that time, or tomorrow if it has passed.
+            guard let today = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now) else { return nil }
+            return today > now ? today : calendar.date(byAdding: .day, value: 1, to: today)
         }
+        let months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+        guard let month = months.firstIndex(of: monthName.lowercased()).map({ $0 + 1 }) else { return nil }
 
-        guard var resets = date(year: year) else { return nil }
+        let year = calendar.component(.year, from: now)
+        func date(year: Int) -> Date? {
+            calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute))
+        }
+        guard let resets = date(year: year) else { return nil }
         // A reset date that is months in the past must be next year's, from a New Year rollover.
         if resets < now.addingTimeInterval(-180 * 86400) {
-            year += 1
-            resets = date(year: year) ?? resets
+            return date(year: year + 1) ?? resets
         }
         return resets
     }

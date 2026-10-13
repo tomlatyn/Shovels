@@ -5,8 +5,10 @@
 //  Created by Tomas Latyn on 13.10.26.
 //
 
+import AppKit
 import Foundation
 import Observation
+import os
 
 @MainActor
 @Observable
@@ -14,22 +16,34 @@ final class UsageStore {
     private static let hiddenKey = "hiddenProviders"
     private static let mainKey = "mainProvider"
     private static let alertsKey = "alertsEnabled"
+    /// Regular check interval.
+    private static let interval: TimeInterval = 300
+    /// Waits before retrying a provider whose check failed for a reason that clears up on its own.
+    /// After the last one, the regular check takes over.
+    private static let retryDelays: [TimeInterval] = [60, 120, 240]
+    /// A provider check that takes longer than this is abandoned, so one stuck CLI can't hold up the others.
+    nonisolated private static let checkDeadline: TimeInterval = 90
 
     private(set) var states: [ProviderID: ProviderState] = [:]
-    /// Providers you've hidden from the dashboard and the menu bar.
+    /// Providers you've hidden from the dashboard and the menu bar. Hidden providers aren't checked.
     private(set) var hidden: Set<ProviderID>
     /// The provider whose percentage shows in the menu bar.
     private(set) var mainProvider: ProviderID
-    private(set) var isChecking = false
+    /// Providers with a check in progress.
+    private(set) var checking: Set<ProviderID> = []
     private(set) var lastChecked: Date?
+    /// The clock the views use. Ticks every 30 seconds, so countdowns and stale states stay current.
     private(set) var now: Date = .now
     private(set) var launchAtLogin = false
     private(set) var alertsEnabled: Bool
     private(set) var alertNote: String?
     private(set) var history: [UsageSample]
     private(set) var loginError: String?
-    private var timer: Timer?
-    private var retryTask: Task<Void, Never>?
+    private var timers: [Timer] = []
+    private var retryTasks: [ProviderID: Task<Void, Never>] = [:]
+    private var failures: [ProviderID: Int] = [:]
+
+    var isChecking: Bool { !checking.isEmpty }
 
     init() {
         let defaults = UserDefaults.standard
@@ -37,64 +51,89 @@ final class UsageStore {
         mainProvider = defaults.string(forKey: Self.mainKey).flatMap(ProviderID.init(rawValue:)) ?? .claudeCode
         alertsEnabled = defaults.object(forKey: Self.alertsKey) as? Bool ?? true
         history = UsageHistory.load()
+        launchAtLogin = LaunchAtLogin.isEnabled
         Alerts.requestPermission()
         Task { await refresh() }
-        timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
-            Task { @MainActor in await self?.refresh() }
+
+        schedule(every: Self.interval) { store in Task { await store.refresh() } }
+        schedule(every: 30) { store in store.now = .now }
+        // After sleep the readings are old. Wait a moment for the network, then check.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(10))
+                await self?.refresh()
+            }
         }
+    }
+
+    /// Timers run in common modes, so they keep firing while the dashboard window is open.
+    private func schedule(every seconds: TimeInterval, _ action: @escaping @MainActor (UsageStore) -> Void) {
+        let timer = Timer(timeInterval: seconds, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                action(self)
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        timers.append(timer)
     }
 
     func state(for provider: ProviderID) -> ProviderState {
         states[provider] ?? ProviderState()
     }
 
-    /// Checks every provider at once. Each check runs off the main actor.
-    func refresh() async {
-        guard !isChecking else { return }
-        isChecking = true
-        defer { isChecking = false }
-
+    /// Checks the given providers, or every visible one. Each provider updates as soon as its own check ends,
+    /// and a provider already being checked is skipped.
+    func refresh(_ providers: [ProviderID]? = nil) async {
+        let targets = (providers ?? visibleProviders).filter { !checking.contains($0) }
+        guard !targets.isEmpty else { return }
+        checking.formUnion(targets)
         let checkedAt = Date.now
-        async let claudeFresh = Self.load(.claudeCode, at: checkedAt)
-        async let codexFresh = Self.load(.codex, at: checkedAt)
-        async let antigravityFresh = Self.load(.antigravity, at: checkedAt)
-        async let cursorFresh = Self.load(.cursor, at: checkedAt)
-        let fresh: [ProviderID: ProviderState] = [
-            .claudeCode: await claudeFresh,
-            .codex: await codexFresh,
-            .antigravity: await antigravityFresh,
-            .cursor: await cursorFresh,
-        ]
-        for (provider, result) in fresh {
-            states[provider] = Self.merge(result, into: state(for: provider))
-        }
-        now = .now
-        lastChecked = checkedAt
-        // Only fresh readings go into history and alerts. A failed check reuses an old snapshot, which would repeat it.
-        let freshSnapshots = fresh.values.compactMap(\.snapshot)
-        let resetEvents = UsageHistory.record(freshSnapshots, now: checkedAt, into: &history)
-        if alertsEnabled {
-            for snapshot in freshSnapshots {
-                Alerts.check(snapshot, now: checkedAt, history: history)
+        await withTaskGroup(of: (ProviderID, ProviderState).self) { group in
+            for provider in targets {
+                group.addTask { (provider, await Self.load(provider, at: checkedAt)) }
             }
-            for event in resetEvents {
-                Alerts.reset(event)
+            for await (provider, fresh) in group {
+                finish(provider, fresh, checkedAt: checkedAt)
             }
-        }
-        launchAtLogin = LaunchAtLogin.isEnabled
-        // A provider that was working and now fails is probably an outage. Retry in a minute.
-        // Setup problems, such as a missing CLI or a trust prompt, don't retry on their own.
-        if ProviderID.allCases.contains(where: { state(for: $0).error != nil && state(for: $0).snapshot != nil }) {
-            scheduleRetry()
         }
     }
 
-    private func scheduleRetry() {
-        retryTask?.cancel()
-        retryTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(60))
+    private func finish(_ provider: ProviderID, _ fresh: ProviderState, checkedAt: Date) {
+        checking.remove(provider)
+        states[provider] = Self.merge(fresh, into: state(for: provider))
+        now = .now
+        lastChecked = .now
+        launchAtLogin = LaunchAtLogin.isEnabled
+
+        if let snapshot = fresh.snapshot {
+            failures[provider] = nil
+            retryTasks[provider]?.cancel()
+            retryTasks[provider] = nil
+            // Only fresh readings go into history and alerts. A failed check keeps an old snapshot, which would repeat it.
+            let resetEvents = UsageHistory.record([snapshot], now: checkedAt, into: &history)
+            if alertsEnabled {
+                Alerts.check(snapshot, now: checkedAt, history: history)
+                resetEvents.forEach(Alerts.reset)
+            }
+        } else if !fresh.needsSetup {
+            // Timeouts and outages usually clear up. Setup problems, such as a missing CLI or a trust prompt,
+            // wait for the regular check or REFRESH.
+            scheduleRetry(provider)
+        }
+    }
+
+    private func scheduleRetry(_ provider: ProviderID) {
+        let attempt = failures[provider, default: 0]
+        guard attempt < Self.retryDelays.count else { return }
+        failures[provider] = attempt + 1
+        retryTasks[provider]?.cancel()
+        retryTasks[provider] = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Self.retryDelays[attempt]))
             guard !Task.isCancelled else { return }
-            await self?.refresh()
+            await self?.refresh([provider])
         }
     }
 
@@ -111,8 +150,11 @@ final class UsageStore {
     func toggleVisible(_ provider: ProviderID) {
         if hidden.contains(provider) {
             hidden.remove(provider)
+            Task { await refresh([provider]) }
         } else {
             hidden.insert(provider)
+            retryTasks[provider]?.cancel()
+            retryTasks[provider] = nil
         }
         UserDefaults.standard.set(hidden.map(\.rawValue).sorted(), forKey: Self.hiddenKey)
     }
@@ -126,15 +168,15 @@ final class UsageStore {
         Task { alertNote = await Alerts.test() }
     }
 
-    /// Samples for one window's current cycle, for its sparkline.
+    /// Samples for one window's current cycle, for its runway estimate.
     func series(for provider: ProviderID, window: UsageWindow) -> [UsageSample] {
         guard let resets = window.resetsAt else { return [] }
-        return UsageHistory.series(history, provider: provider, title: window.title, resetsAt: resets)
+        return UsageHistory.series(history, provider: provider, window: window.key, resetsAt: resets)
     }
 
     /// Estimated time until the window is full at its recent pace.
     func runway(for provider: ProviderID, window: UsageWindow) -> TimeInterval? {
-        UsageHistory.runway(series(for: provider, window: window), now: now)
+        UsageHistory.runway(series(for: provider, window: window), window: window, now: now)
     }
 
     func setMain(_ provider: ProviderID) {
@@ -142,7 +184,9 @@ final class UsageStore {
         UserDefaults.standard.set(provider.rawValue, forKey: Self.mainKey)
     }
 
+    /// REFRESH: looks for the CLIs again, in case one was just installed, and checks every visible provider.
     func refreshNow() {
+        CLILocator.reset()
         Task { await refresh() }
     }
 
@@ -153,17 +197,26 @@ final class UsageStore {
         } catch {
             loginError = error.localizedDescription
         }
+        if enabled && LaunchAtLogin.needsApproval {
+            loginError = "macOS needs your approval. Turn Shovels on in System Settings › General › Login Items."
+            LaunchAtLogin.openSettings()
+        }
         launchAtLogin = LaunchAtLogin.isEnabled
     }
 
     /// A failed check keeps the last good snapshot and records the error.
     private static func merge(_ fresh: ProviderState, into old: ProviderState) -> ProviderState {
         if fresh.snapshot != nil { return fresh }
-        return ProviderState(snapshot: old.snapshot, error: fresh.error, outage: fresh.outage)
+        return ProviderState(snapshot: old.snapshot, error: fresh.error, needsSetup: fresh.needsSetup)
     }
 
     nonisolated private static func load(_ provider: ProviderID, at now: Date) async -> ProviderState {
-        await Task.detached {
+        let late = ProviderState(
+            snapshot: nil,
+            error: "\(provider.displayName.capitalized) didn't finish checking in \(Int(checkDeadline)) seconds. Shovels will try again.",
+            needsSetup: false
+        )
+        return await Blocking.run(timeout: checkDeadline, fallback: late) {
             do {
                 let snapshot: ProviderSnapshot
                 switch provider {
@@ -174,22 +227,13 @@ final class UsageStore {
                 }
                 return ProviderState(snapshot: snapshot, error: nil)
             } catch {
-                return ProviderState(snapshot: nil, error: message(for: error), outage: isOutage(error))
+                return ProviderState(
+                    snapshot: nil,
+                    error: error.localizedDescription,
+                    needsSetup: (error as? any ProviderFailure)?.needsSetup ?? false
+                )
             }
-        }.value
-    }
-
-    nonisolated private static func isOutage(_ error: Error) -> Bool {
-        if let error = error as? CursorUsageError, case .unavailable = error { return true }
-        return false
-    }
-
-    nonisolated private static func message(for error: Error) -> String {
-        if let error = error as? ClaudeUsageError { return error.message }
-        if let error = error as? CodexUsageError { return error.message }
-        if let error = error as? AntigravityUsageError { return error.message }
-        if let error = error as? CursorUsageError { return error.message }
-        return error.localizedDescription
+        }
     }
 
     /// The first window's percentage, or nil when there's no fresh reading.
@@ -215,5 +259,24 @@ final class UsageStore {
             return state(for: provider).error ?? "\(provider.displayName.capitalized): checking usage"
         }
         .joined(separator: "\n")
+    }
+}
+
+/// Runs blocking work on its own thread instead of Swift's shared pool, with a deadline.
+/// If the work is still running at the deadline, the caller gets `fallback` and moves on.
+enum Blocking {
+    static func run<T: Sendable>(timeout: TimeInterval, fallback: T, _ work: @escaping @Sendable () -> T) async -> T {
+        await withCheckedContinuation { continuation in
+            let resumed = OSAllocatedUnfairLock(initialState: false)
+            let finish: @Sendable (T) -> Void = { value in
+                let first = resumed.withLock { done in
+                    defer { done = true }
+                    return !done
+                }
+                if first { continuation.resume(returning: value) }
+            }
+            Thread.detachNewThread { finish(work()) }
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) { finish(fallback) }
+        }
     }
 }
