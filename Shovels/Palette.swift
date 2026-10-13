@@ -22,9 +22,9 @@ enum Palette {
     static func accent(for provider: ProviderID) -> Color {
         switch provider {
         case .claudeCode: Color(hex: 0xFFA640)
-        case .codex: Color(hex: 0x5BFF8A)
-        case .antigravity: Color(hex: 0xFF5DCB)
-        case .cursor: Color(hex: 0x4DE3FF)
+        case .codex: Color(hex: 0x4DA3FF)
+        case .antigravity: Color(hex: 0x3DDC84)
+        case .cursor: Color(hex: 0xEDEDED)
         }
     }
 }

@@ -13,6 +13,7 @@ final class UsageStore {
     private(set) var launchAtLogin = false
     private(set) var loginError: String?
     private var timer: Timer?
+    private var retryTask: Task<Void, Never>?
 
     init() {
         Task { await refresh() }
@@ -47,6 +48,20 @@ final class UsageStore {
         }
         now = .now
         launchAtLogin = LaunchAtLogin.isEnabled
+        // A provider that was working and now fails is probably an outage. Retry in a minute.
+        // Setup problems, such as a missing CLI or a trust prompt, don't retry on their own.
+        if ProviderID.allCases.contains(where: { state(for: $0).error != nil && state(for: $0).snapshot != nil }) {
+            scheduleRetry()
+        }
+    }
+
+    private func scheduleRetry() {
+        retryTask?.cancel()
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(60))
+            guard !Task.isCancelled else { return }
+            await self?.refresh()
+        }
     }
 
     func refreshNow() {
