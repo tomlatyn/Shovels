@@ -135,9 +135,9 @@ struct ProviderCard: View {
                 if isMain {
                     Text("MENU BAR")
                         .font(Retro.body(16))
-                        .foregroundStyle(Palette.panel)
+                        .foregroundStyle(Palette.phosphor)
                         .padding(.horizontal, 4)
-                        .background(Palette.phosphor)
+                        .overlay(Rectangle().stroke(Palette.phosphor, lineWidth: 1))
                 }
                 if let plan = snapshot?.plan {
                     Text(plan)
