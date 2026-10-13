@@ -63,11 +63,38 @@ enum CursorUsage {
         }
     }
 
-    /// Parsed once a real /usage screen has been captured. Until then this reports that it isn't read yet.
+    /// Reads the plan and the Included, Auto, and API usage from the /usage panel.
+    /// The panel repaints, so the last complete reading wins.
     static func parse(_ screen: String, now: Date) throws -> ProviderSnapshot {
-        if screen.contains("Failed to load usage data") {
-            throw CursorUsageError.unavailable
+        guard let plan = screen.matches(of: #/Usage • (\w+)/#).last.map({ String($0.1).uppercased() }) else {
+            if screen.contains("Failed to load usage data") {
+                throw CursorUsageError.unavailable
+            }
+            throw CursorUsageError.noUsage("Cursor's usage screen came back in a format Shovels doesn't read yet.")
         }
-        throw CursorUsageError.noUsage("Cursor's usage screen came back in a format Shovels doesn't read yet.")
+        let resets = screen.matches(of: #/Resets (\w{3}) (\d{1,2})/#).last.flatMap { match -> Date? in
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = "MMM d yyyy"
+            var calendar = Calendar.current
+            calendar.timeZone = .current
+            let year = calendar.component(.year, from: now)
+            var date = formatter.date(from: "\(match.1) \(match.2) \(year)")
+            if let candidate = date, candidate < now.addingTimeInterval(-180 * 86400) {
+                date = formatter.date(from: "\(match.1) \(match.2) \(year + 1)")
+            }
+            return date
+        }
+        var windows: [UsageWindow] = []
+        for (title, pattern) in [("Included", #/Included\s+(\d+)% used/#), ("Auto", #/Auto\s+(\d+)% used/#), ("API", #/API\s+(\d+)% used/#)] {
+            if let match = screen.matches(of: pattern).last, let used = Double(match.1) {
+                // minutes 0 keeps the panel's own name, since Cursor's windows are monthly with no named length.
+                windows.append(UsageWindow(title: title, minutes: 0, usedPercent: used, resetsAt: resets))
+            }
+        }
+        guard !windows.isEmpty else {
+            throw CursorUsageError.noUsage("Cursor's usage screen came back in a format Shovels doesn't read yet.")
+        }
+        return ProviderSnapshot(provider: .cursor, plan: plan, windows: windows, asOf: now, tokensLast5h: nil)
     }
 }
