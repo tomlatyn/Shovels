@@ -23,6 +23,8 @@ enum Palette {
         switch provider {
         case .claudeCode: Color(hex: 0xFFA640)
         case .codex: Color(hex: 0x5BFF8A)
+        case .antigravity: Color(hex: 0xFF5DCB)
+        case .cursor: Color(hex: 0x4DE3FF)
         }
     }
 }

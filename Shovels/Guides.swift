@@ -29,21 +29,23 @@ struct ConnectGuide: Identifiable {
             ]
         ),
         ConnectGuide(
-            id: "cursor",
-            title: "CURSOR",
-            status: "Not available yet. Cursor's CLI doesn't report usage.",
+            id: "antigravity",
+            title: "ANTIGRAVITY",
+            status: "Connected through the agy CLI's /usage screen. Shovels checks it every five minutes.",
             steps: [
-                "Run 'agent login' in Terminal to sign in the Cursor CLI.",
-                "Usage is shown at cursor.com/dashboard. Shovels can't read it without an undocumented endpoint.",
+                "Install the agy command line from Antigravity.",
+                "Run 'agy' in Terminal once and sign in when it asks.",
+                "Shovels opens agy in the background to read /usage. Each check takes about 20 seconds.",
             ]
         ),
         ConnectGuide(
-            id: "antigravity",
-            title: "ANTIGRAVITY",
-            status: "Not available yet. The agy CLI has no usage command that Shovels can run.",
+            id: "cursor",
+            title: "CURSOR",
+            status: "Needs a one-time trust step. Shovels reads usage from the agent CLI's /usage screen.",
             steps: [
-                "Run 'agy' in Terminal and sign in when it asks.",
-                "Inside the session, '/usage' may show quota. This isn't verified on this Mac, and Shovels can't read it yet.",
+                "Install the Cursor agent command line.",
+                "Run 'agent login' in Terminal and sign in.",
+                "Run 'agent' in Terminal from ~/Library/Application Support/Shovels/cursor-workspace. Choose Trust when it asks. Shovels never answers that question for you.",
             ]
         ),
     ]

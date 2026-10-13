@@ -3,11 +3,15 @@ import Foundation
 enum ProviderID: Sendable, CaseIterable {
     case claudeCode
     case codex
+    case antigravity
+    case cursor
 
     var displayName: String {
         switch self {
         case .claudeCode: "CLAUDE CODE"
         case .codex: "CODEX"
+        case .antigravity: "ANTIGRAVITY"
+        case .cursor: "CURSOR"
         }
     }
 
@@ -15,6 +19,8 @@ enum ProviderID: Sendable, CaseIterable {
         switch self {
         case .claudeCode: "CC"
         case .codex: "CX"
+        case .antigravity: "AG"
+        case .cursor: "CU"
         }
     }
 }

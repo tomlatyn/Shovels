@@ -37,10 +37,34 @@ enum ProviderGlyph {
         "........",
     ]
 
+    static let diamond = [
+        "...##...",
+        "..####..",
+        ".######.",
+        "########",
+        "########",
+        ".######.",
+        "..####..",
+        "...##...",
+    ]
+
+    static let pointer = [
+        "##......",
+        "###.....",
+        "####....",
+        "#####...",
+        "######..",
+        "#####...",
+        "##.##...",
+        "#...##..",
+    ]
+
     static func grid(for provider: ProviderID) -> [String] {
         switch provider {
         case .claudeCode: spark
         case .codex: chevron
+        case .antigravity: diamond
+        case .cursor: pointer
         }
     }
 

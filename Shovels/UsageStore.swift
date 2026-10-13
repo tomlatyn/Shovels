@@ -5,10 +5,9 @@ import Observation
 @Observable
 final class UsageStore {
     /// Providers shown in the menu bar, in order.
-    static let menuProviders: [ProviderID] = [.claudeCode, .codex]
+    static let menuProviders: [ProviderID] = ProviderID.allCases
 
-    private(set) var claude = ProviderState()
-    private(set) var codex = ProviderState()
+    private(set) var states: [ProviderID: ProviderState] = [:]
     private(set) var isChecking = false
     private(set) var now: Date = .now
     private(set) var launchAtLogin = false
@@ -23,10 +22,7 @@ final class UsageStore {
     }
 
     func state(for provider: ProviderID) -> ProviderState {
-        switch provider {
-        case .claudeCode: claude
-        case .codex: codex
-        }
+        states[provider] ?? ProviderState()
     }
 
     /// Checks every provider at once. Each check runs off the main actor.
@@ -36,10 +32,19 @@ final class UsageStore {
         defer { isChecking = false }
 
         let checkedAt = Date.now
-        async let claudeFresh = Self.loadClaude(at: checkedAt)
-        async let codexFresh = Self.loadCodex(at: checkedAt)
-        claude = Self.merge(await claudeFresh, into: claude)
-        codex = Self.merge(await codexFresh, into: codex)
+        async let claudeFresh = Self.load(.claudeCode, at: checkedAt)
+        async let codexFresh = Self.load(.codex, at: checkedAt)
+        async let antigravityFresh = Self.load(.antigravity, at: checkedAt)
+        async let cursorFresh = Self.load(.cursor, at: checkedAt)
+        let fresh: [ProviderID: ProviderState] = [
+            .claudeCode: await claudeFresh,
+            .codex: await codexFresh,
+            .antigravity: await antigravityFresh,
+            .cursor: await cursorFresh,
+        ]
+        for (provider, result) in fresh {
+            states[provider] = Self.merge(result, into: state(for: provider))
+        }
         now = .now
         launchAtLogin = LaunchAtLogin.isEnabled
     }
@@ -64,24 +69,29 @@ final class UsageStore {
         return ProviderState(snapshot: old.snapshot, error: fresh.error)
     }
 
-    nonisolated private static func loadClaude(at now: Date) async -> ProviderState {
+    nonisolated private static func load(_ provider: ProviderID, at now: Date) async -> ProviderState {
         await Task.detached {
             do {
-                return ProviderState(snapshot: try ClaudeProvider.snapshot(now: now), error: nil)
+                let snapshot: ProviderSnapshot
+                switch provider {
+                case .claudeCode: snapshot = try ClaudeProvider.snapshot(now: now)
+                case .codex: snapshot = try CodexUsage.snapshot(now: now)
+                case .antigravity: snapshot = try AntigravityUsage.snapshot(now: now)
+                case .cursor: snapshot = try CursorUsage.snapshot(now: now)
+                }
+                return ProviderState(snapshot: snapshot, error: nil)
             } catch {
-                return ProviderState(snapshot: nil, error: (error as? ClaudeUsageError)?.message ?? error.localizedDescription)
+                return ProviderState(snapshot: nil, error: message(for: error))
             }
         }.value
     }
 
-    nonisolated private static func loadCodex(at now: Date) async -> ProviderState {
-        await Task.detached {
-            do {
-                return ProviderState(snapshot: try CodexUsage.snapshot(now: now), error: nil)
-            } catch {
-                return ProviderState(snapshot: nil, error: (error as? CodexUsageError)?.message ?? error.localizedDescription)
-            }
-        }.value
+    nonisolated private static func message(for error: Error) -> String {
+        if let error = error as? ClaudeUsageError { return error.message }
+        if let error = error as? CodexUsageError { return error.message }
+        if let error = error as? AntigravityUsageError { return error.message }
+        if let error = error as? CursorUsageError { return error.message }
+        return error.localizedDescription
     }
 
     /// The first window's percentage, or nil when there's no fresh reading.
@@ -101,11 +111,10 @@ final class UsageStore {
     /// Tooltip for the menu bar item. Says why there's no number yet.
     var menuBarHelp: String {
         ProviderID.allCases.map { provider in
-            let state = state(for: provider)
             if menuPercent(for: provider) != nil {
                 return "\(provider.displayName.capitalized): usage shown"
             }
-            return state.error ?? "\(provider.displayName.capitalized): checking usage"
+            return state(for: provider).error ?? "\(provider.displayName.capitalized): checking usage"
         }
         .joined(separator: "\n")
     }
