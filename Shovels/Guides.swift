@@ -1,27 +1,31 @@
 import SwiftUI
 
-/// How-to text shown in the dashboard: what is connected and what to run to connect the rest.
+/// How-to text shown in the dashboard. Each guide is one row; tapping it shows the steps.
 struct ConnectGuide: Identifiable {
     let id: String
     let title: String
+    /// One word for the row, such as CONNECTED or SETUP.
+    let badge: String
     let status: String
     let steps: [String]
 
     static let all: [ConnectGuide] = [
         ConnectGuide(
-            id: "claude",
+            id: "claudeCode",
             title: "CLAUDE CODE",
-            status: "Connected. Shows session, weekly, and five-hour tokens.",
+            badge: "CONNECTED",
+            status: "Shows session, weekly, and five-hour tokens.",
             steps: [
                 "Install Claude Code, then run 'claude' in Terminal.",
                 "Sign in when it asks. The login stays on this Mac.",
-                "Shovels runs 'claude -p /usage' every five minutes. Nothing else is needed.",
+                "Shovels runs 'claude -p /usage' every five minutes.",
             ]
         ),
         ConnectGuide(
             id: "codex",
             title: "CODEX",
-            status: "Connected through the Codex app server.",
+            badge: "CONNECTED",
+            status: "Reads limits through the Codex app server.",
             steps: [
                 "Install the Codex CLI.",
                 "Run 'codex login' in Terminal and sign in with the ChatGPT account you want to track.",
@@ -31,7 +35,8 @@ struct ConnectGuide: Identifiable {
         ConnectGuide(
             id: "antigravity",
             title: "ANTIGRAVITY",
-            status: "Connected through the agy CLI's /usage screen. Shovels checks it every five minutes.",
+            badge: "CONNECTED",
+            status: "Reads the agy CLI's /usage screen.",
             steps: [
                 "Install the agy command line from Antigravity.",
                 "Run 'agy' in Terminal once and sign in when it asks.",
@@ -41,7 +46,8 @@ struct ConnectGuide: Identifiable {
         ConnectGuide(
             id: "cursor",
             title: "CURSOR",
-            status: "Needs a one-time trust step. Shovels reads usage from the agent CLI's /usage screen.",
+            badge: "SETUP",
+            status: "Needs a one-time trust step.",
             steps: [
                 "Install the Cursor agent command line.",
                 "Run 'agent login' in Terminal and sign in.",
@@ -51,29 +57,38 @@ struct ConnectGuide: Identifiable {
     ]
 }
 
-struct GuidesView: View {
+extension ConnectGuide {
+    static func `for`(_ provider: ProviderID) -> ConnectGuide? {
+        all.first { $0.id == provider.rawValue }
+    }
+}
+
+/// Shown in place of a provider's card while that provider isn't connected yet.
+struct GuideCard: View {
+    let guide: ConnectGuide
+    let message: String
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(ConnectGuide.all) { guide in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(guide.title)
-                        .font(Retro.title(9))
-                        .foregroundStyle(Palette.phosphor)
-                    Text(guide.status)
-                        .font(Retro.body(17))
-                        .foregroundStyle(Palette.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    ForEach(Array(guide.steps.enumerated()), id: \.offset) { index, step in
-                        Text("\(index + 1). \(step)")
-                            .font(Retro.body(18))
-                            .foregroundStyle(Palette.phosphor)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .overlay(Rectangle().stroke(Palette.border, lineWidth: 1))
+        VStack(alignment: .leading, spacing: 6) {
+            Text(guide.title)
+                .font(Retro.title(9))
+                .foregroundStyle(Palette.phosphor)
+            if !message.isEmpty {
+                Text(message)
+                    .font(Retro.body(17))
+                    .foregroundStyle(Palette.alert)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            ForEach(Array(guide.steps.enumerated()), id: \.offset) { index, step in
+                Text("\(index + 1). \(step)")
+                    .font(Retro.body(17))
+                    .foregroundStyle(Palette.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
+        .overlay(Rectangle().stroke(Palette.border, lineWidth: 1))
     }
 }

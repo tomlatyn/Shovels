@@ -3,7 +3,7 @@ import SwiftUI
 
 struct DashboardView: View {
     let store: UsageStore
-    @State private var showingGuides = false
+    @State private var showingSettings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -19,16 +19,21 @@ struct DashboardView: View {
                     .font(Retro.body(18))
                     .foregroundStyle(Palette.secondary)
             }
-            ForEach(store.visibleProviders, id: \.self) { provider in
-                ProviderCard(provider: provider, state: store.state(for: provider), now: store.now,
-                             isMain: store.mainProvider == provider)
-            }
-            if store.visibleProviders.isEmpty {
-                Text("All providers are hidden. Turn one on below.")
-                    .foregroundStyle(Palette.secondary)
-            }
-            if showingGuides {
-                GuidesView()
+            if showingSettings {
+                settingsPanel
+            } else {
+                ForEach(store.visibleProviders, id: \.self) { provider in
+                    if isUnconnected(store.state(for: provider)), let guide = ConnectGuide.for(provider) {
+                        GuideCard(guide: guide, message: store.state(for: provider).error ?? "")
+                    } else {
+                        ProviderCard(provider: provider, state: store.state(for: provider), now: store.now,
+                                     isMain: store.mainProvider == provider)
+                    }
+                }
+                if store.visibleProviders.isEmpty {
+                    Text("All providers are hidden. Turn one on below.")
+                        .foregroundStyle(Palette.secondary)
+                }
             }
             footer
         }
@@ -43,10 +48,18 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 TerminalButton(title: store.isChecking ? "CHECKING" : "REFRESH") { store.refreshNow() }
-                TerminalButton(title: showingGuides ? "HIDE GUIDES" : "GUIDES") { showingGuides.toggle() }
                 Spacer()
                 TerminalButton(title: "QUIT") { NSApplication.shared.terminate(nil) }
             }
+            TerminalButton(title: showingSettings ? "HIDE SETTINGS" : "SETTINGS") {
+                showingSettings.toggle()
+            }
+        }
+    }
+
+    /// Settings replace the cards while open, so the window never grows past the screen.
+    private var settingsPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("SHOW ON / OFF")
                     .font(Retro.body(17))
@@ -81,7 +94,15 @@ struct DashboardView: View {
                     .foregroundStyle(Palette.alert)
             }
         }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(Rectangle().stroke(Palette.border, lineWidth: 1))
     }
+}
+
+/// Not connected: no reading yet, and the problem is setup, not an outage.
+func isUnconnected(_ state: ProviderState) -> Bool {
+    state.snapshot == nil && state.error != nil && !state.outage
 }
 
 struct ProviderCard: View {
@@ -163,10 +184,10 @@ struct TerminalButton: View {
             Text(title)
                 .font(Retro.body(18))
                 .fixedSize()
-                .foregroundStyle(filled ? Palette.panel : Palette.phosphor)
+                .foregroundStyle(Palette.phosphor)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
-                .background(filled ? Palette.phosphor : Color.clear)
+                .background(filled ? Color(hex: 0x22352A) : Color.clear)
                 .overlay(Rectangle().stroke(Palette.phosphor, lineWidth: 1))
         }
         .buttonStyle(.plain)
