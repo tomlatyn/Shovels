@@ -25,16 +25,16 @@ enum ProviderGlyph {
         "........",
     ]
 
-    /// Shovel for the app itself, drawn at the start of the menu bar and in the header.
+    /// Shovel for the app itself: a diagonal handle running into a spade at the bottom left.
     static let shovel = [
         "......##",
         ".....##.",
         "....##..",
-        "...##...",
         "..###...",
         ".#####..",
         ".#####..",
         "..###...",
+        "........",
     ]
 
     static func grid(for provider: ProviderID) -> [String] {
