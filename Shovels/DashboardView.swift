@@ -47,14 +47,16 @@ struct DashboardView: View {
     private var footer: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                if !showingSettings {
+                if showingSettings {
+                    TerminalButton(title: "BACK") { showingSettings = false }
+                } else {
                     TerminalButton(title: store.isChecking ? "CHECKING" : "REFRESH") { store.refreshNow() }
                 }
                 Spacer()
                 TerminalButton(title: "QUIT") { NSApplication.shared.terminate(nil) }
             }
-            TerminalButton(title: showingSettings ? "BACK" : "SETTINGS") {
-                showingSettings.toggle()
+            if !showingSettings {
+                TerminalButton(title: "SETTINGS") { showingSettings = true }
             }
         }
     }
