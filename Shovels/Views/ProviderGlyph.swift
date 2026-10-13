@@ -44,16 +44,22 @@ enum ProviderGlyph {
         "............",
     ]
 
-    /// Shovel for the app itself: a diagonal handle running into a spade at the bottom left.
+    /// Shovel for the app itself, traced from the reference image: a spade at the top left, a diagonal handle and a grip at the bottom right.
     static let shovel = [
-        "......##",
-        ".....##.",
-        "....##..",
-        "..###...",
-        ".#####..",
-        ".#####..",
-        "..###...",
-        "........",
+        ".####.........",
+        "######........",
+        "#######.......",
+        "#######.......",
+        "######........",
+        ".######.......",
+        "..##.###......",
+        "......###.....",
+        ".......###....",
+        "........###...",
+        ".........####.",
+        "..........####",
+        "..........###.",
+        "...........#..",
     ]
 
     /// Antigravity: an arch with a crossbar.
