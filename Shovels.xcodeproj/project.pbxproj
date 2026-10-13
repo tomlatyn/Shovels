@@ -26,6 +26,7 @@
 		A10000000000000000000038 /* MenuBarLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* MenuBarLabel.swift */; };
 		A1000000000000000000003A /* Guides.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039 /* Guides.swift */; };
 		A1000000000000000000003C /* ProviderGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003B /* ProviderGlyph.swift */; };
+		A10000000000000000000101 /* ScreenshotRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000100 /* ScreenshotRenderer.swift */; };
 		A1000000000000000000003E /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003D /* Palette.swift */; };
 		A10000000000000000000042 /* PressStart2P-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041 /* PressStart2P-Regular.ttf */; };
 		A10000000000000000000044 /* VT323-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043 /* VT323-Regular.ttf */; };
@@ -71,6 +72,7 @@
 		A10000000000000000000037 /* MenuBarLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLabel.swift; sourceTree = "<group>"; };
 		A10000000000000000000039 /* Guides.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Guides.swift; sourceTree = "<group>"; };
 		A1000000000000000000003B /* ProviderGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderGlyph.swift; sourceTree = "<group>"; };
+		A10000000000000000000100 /* ScreenshotRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotRenderer.swift; sourceTree = "<group>"; };
 		A1000000000000000000003D /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		A10000000000000000000041 /* PressStart2P-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = PressStart2P-Regular.ttf; sourceTree = "<group>"; };
 		A10000000000000000000043 /* VT323-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = VT323-Regular.ttf; sourceTree = "<group>"; };
@@ -192,6 +194,7 @@
 				A10000000000000000000037 /* MenuBarLabel.swift */,
 				A10000000000000000000039 /* Guides.swift */,
 				A1000000000000000000003B /* ProviderGlyph.swift */,
+				A10000000000000000000100 /* ScreenshotRenderer.swift */,
 				A1000000000000000000003D /* Palette.swift */,
 			);
 			path = Views;
@@ -326,6 +329,7 @@
 				A10000000000000000000038 /* MenuBarLabel.swift in Sources */,
 				A1000000000000000000003A /* Guides.swift in Sources */,
 				A1000000000000000000003C /* ProviderGlyph.swift in Sources */,
+				A10000000000000000000101 /* ScreenshotRenderer.swift in Sources */,
 				A1000000000000000000003E /* Palette.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

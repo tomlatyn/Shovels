@@ -13,6 +13,10 @@
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
 </p>
 
+<p align="center">
+  <img src="docs/dashboard.png" width="380" alt="Shovels dashboard">
+</p>
+
 ---
 
 ## What is Shovels?

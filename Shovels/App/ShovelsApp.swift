@@ -13,6 +13,9 @@ struct ShovelsApp: App {
 
     init() {
         ShovelsFonts.register()
+#if DEBUG
+        ScreenshotRenderer.renderIfRequested()
+#endif
         // A CLI that exits while Shovels writes to it must not take the app down with SIGPIPE.
         signal(SIGPIPE, SIG_IGN)
         // Quitting mid-check would otherwise leave the CLIs running.

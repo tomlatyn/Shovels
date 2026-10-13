@@ -45,6 +45,20 @@ final class UsageStore {
 
     var isChecking: Bool { !checking.isEmpty }
 
+#if DEBUG
+    /// Screenshot-only store: shows the given readings and starts no checks, timers or alerts.
+    init(screenshotStates: [ProviderID: ProviderState], now: Date) {
+        hidden = []
+        mainProvider = .claudeCode
+        alertsEnabled = true
+        history = []
+        launchAtLogin = false
+        states = screenshotStates
+        lastChecked = now
+        self.now = now
+    }
+#endif
+
     init() {
         let defaults = UserDefaults.standard
         hidden = Set((defaults.stringArray(forKey: Self.hiddenKey) ?? []).compactMap(ProviderID.init(rawValue:)))
