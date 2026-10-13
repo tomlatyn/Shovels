@@ -70,9 +70,15 @@ struct GuideCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(guide.title)
-                .font(Retro.title(9))
-                .foregroundStyle(Palette.phosphor)
+            HStack(spacing: 6) {
+                if let provider = ProviderID(rawValue: guide.id) {
+                    Image(nsImage: ProviderGlyph.image(for: provider, pointSize: 14))
+                        .foregroundStyle(Palette.accent(for: provider))
+                }
+                Text(guide.title)
+                    .font(Retro.title(9))
+                    .foregroundStyle(Palette.phosphor)
+            }
             if !message.isEmpty {
                 Text(message)
                     .font(Retro.body(17))

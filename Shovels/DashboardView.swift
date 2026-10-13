@@ -123,6 +123,8 @@ struct ProviderCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
+                Image(nsImage: ProviderGlyph.image(for: provider, pointSize: 14))
+                    .foregroundStyle(accent)
                 Text(provider.displayName)
                     .font(Retro.title(9))
                     .foregroundStyle(accent)

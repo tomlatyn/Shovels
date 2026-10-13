@@ -37,15 +37,16 @@ enum ProviderGlyph {
         "........",
     ]
 
-    static let diamond = [
+    /// Antigravity: an arch with a crossbar.
+    static let arch = [
         "...##...",
-        "..####..",
+        "..#..#..",
+        "..#..#..",
+        ".#....#.",
         ".######.",
-        "########",
-        "########",
-        ".######.",
-        "..####..",
-        "...##...",
+        "##....##",
+        "#......#",
+        "........",
     ]
 
     static let pointer = [
@@ -63,7 +64,7 @@ enum ProviderGlyph {
         switch provider {
         case .claudeCode: spark
         case .codex: chevron
-        case .antigravity: diamond
+        case .antigravity: arch
         case .cursor: pointer
         }
     }
