@@ -32,7 +32,8 @@ enum TerminalSession {
         command: String,
         startupSeconds: Double,
         replySeconds: Double,
-        blocked: (String) -> String?
+        blocked: (String) -> String?,
+        replyUntil: ((String) -> Bool)? = nil
     ) throws -> String {
         let master = posix_openpt(O_RDWR | O_NOCTTY)
         guard master >= 0, grantpt(master) == 0, unlockpt(master) == 0,
@@ -87,7 +88,15 @@ enum TerminalSession {
         }
         pump(master, for: 1.0, into: &screen)
         send(master, [0x0D])
-        pump(master, for: replySeconds, into: &screen)
+        if let replyUntil {
+            // Stop as soon as the reply is on screen, or after replySeconds.
+            let deadline = Date().addingTimeInterval(replySeconds)
+            while Date() < deadline && !replyUntil(clean(screen)) {
+                pump(master, for: 0.5, into: &screen)
+            }
+        } else {
+            pump(master, for: replySeconds, into: &screen)
+        }
 
         // Ctrl-C closes the panel and the CLI. Then make sure it's gone.
         send(master, [0x03])

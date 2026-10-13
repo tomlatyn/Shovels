@@ -39,6 +39,9 @@ enum CursorUsage {
         ShovelsPaths.support.appending(path: "cursor-workspace", directoryHint: .isDirectory)
     }
 
+    /// What users see when Cursor answers with something Shovels can't read. Shows up in the Cursor card.
+    static let unreadable = "Cursor usage couldn't be read right now. Shovels will try again on its own."
+
     static let trustMessage = "Cursor needs this folder trusted. Run 'agent' in Terminal from ~/Library/Application Support/Shovels/cursor-workspace, choose Trust, then refresh."
 
     static func snapshot(now: Date) throws -> ProviderSnapshot {
@@ -52,10 +55,11 @@ enum CursorUsage {
                 directory: workspace,
                 command: "/usage",
                 startupSeconds: 12,
-                replySeconds: 8,
+                replySeconds: 30,
                 blocked: { text in
                     text.contains("Trust this workspace") || text.contains("Workspace Trust Required") ? trustMessage : nil
-                }
+                },
+                replyUntil: { text in text.contains("Usage •") || text.contains("Failed to load usage data") }
             )
             return try parse(screen, now: now)
         } catch TerminalSessionError.blockedByPrompt(let message) {
@@ -70,7 +74,7 @@ enum CursorUsage {
             if screen.contains("Failed to load usage data") {
                 throw CursorUsageError.unavailable
             }
-            throw CursorUsageError.noUsage("Cursor's usage screen came back in a format Shovels doesn't read yet.")
+            throw CursorUsageError.noUsage(unreadable)
         }
         let resets = screen.matches(of: #/Resets (\w{3}) (\d{1,2})/#).last.flatMap { match -> Date? in
             let formatter = DateFormatter()
@@ -93,7 +97,7 @@ enum CursorUsage {
             }
         }
         guard !windows.isEmpty else {
-            throw CursorUsageError.noUsage("Cursor's usage screen came back in a format Shovels doesn't read yet.")
+            throw CursorUsageError.noUsage(unreadable)
         }
         return ProviderSnapshot(provider: .cursor, plan: plan, windows: windows, asOf: now, tokensLast5h: nil)
     }
