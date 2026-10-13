@@ -1,3 +1,10 @@
+//
+//  Guides.swift
+//  Shovels
+//
+//  Created by Tomas Latyn on 13.10.26.
+//
+
 import SwiftUI
 
 /// How-to text shown in the dashboard. Each guide is one row; tapping it shows the steps.

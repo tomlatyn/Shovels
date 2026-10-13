@@ -1,3 +1,10 @@
+//
+//  Usage.swift
+//  Shovels
+//
+//  Created by Tomas Latyn on 13.10.26.
+//
+
 import Foundation
 
 enum ProviderID: String, Sendable, CaseIterable {

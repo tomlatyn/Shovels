@@ -1,3 +1,10 @@
+//
+//  LaunchAtLogin.swift
+//  Shovels
+//
+//  Created by Tomas Latyn on 13.10.26.
+//
+
 import ServiceManagement
 
 enum LaunchAtLogin {

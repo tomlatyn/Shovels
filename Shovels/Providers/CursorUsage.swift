@@ -1,3 +1,10 @@
+//
+//  CursorUsage.swift
+//  Shovels
+//
+//  Created by Tomas Latyn on 13.10.26.
+//
+
 import Foundation
 
 enum CursorUsageError: Error, Sendable {

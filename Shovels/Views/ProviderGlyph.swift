@@ -1,3 +1,10 @@
+//
+//  ProviderGlyph.swift
+//  Shovels
+//
+//  Created by Tomas Latyn on 13.10.26.
+//
+
 import AppKit
 
 /// Pixel glyphs from the design, drawn as template images so the menu bar tints them.

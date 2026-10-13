@@ -1,3 +1,10 @@
+//
+//  ClaudeProvider.swift
+//  Shovels
+//
+//  Created by Tomas Latyn on 13.10.26.
+//
+
 import Foundation
 
 /// Claude Code usage: limits from the official CLI's /usage, tokens from local logs.
