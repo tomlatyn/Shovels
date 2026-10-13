@@ -240,6 +240,12 @@ struct WindowRow: View {
         }
     }
 
+    /// A sparkline needs at least 10 minutes of readings. Two points look like noise.
+    private var hasEnoughHistory: Bool {
+        guard series.count >= 3, let first = series.first, let last = series.last else { return false }
+        return last.at - first.at >= 600
+    }
+
     /// Shown when the window would fill before it resets.
     private var runwayText: String? {
         guard let runway, percent != nil, let resetsAt = window.resetsAt else { return nil }
@@ -266,7 +272,7 @@ struct WindowRow: View {
                 .font(Retro.body(17))
                 .foregroundStyle(Palette.secondary)
                 .padding(.leading, 90)
-            if series.count > 1 {
+            if hasEnoughHistory {
                 Sparkline(values: series.map(\.used), color: accent)
                     .padding(.leading, 90)
             }
