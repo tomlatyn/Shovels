@@ -42,6 +42,8 @@ struct DashboardView: View {
         .frame(width: 372, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
         .background(Palette.panel)
+        // Closing the window returns to the dashboard, not settings.
+        .onDisappear { showingSettings = false }
     }
 
     private var footer: some View {
