@@ -6,6 +6,7 @@ import Observation
 final class UsageStore {
     private static let hiddenKey = "hiddenProviders"
     private static let mainKey = "mainProvider"
+    private static let alertsKey = "alertsEnabled"
 
     private(set) var states: [ProviderID: ProviderState] = [:]
     /// Providers you've hidden from the dashboard and the menu bar.
@@ -16,6 +17,7 @@ final class UsageStore {
     private(set) var lastChecked: Date?
     private(set) var now: Date = .now
     private(set) var launchAtLogin = false
+    private(set) var alertsEnabled: Bool
     private(set) var loginError: String?
     private var timer: Timer?
     private var retryTask: Task<Void, Never>?
@@ -24,6 +26,8 @@ final class UsageStore {
         let defaults = UserDefaults.standard
         hidden = Set((defaults.stringArray(forKey: Self.hiddenKey) ?? []).compactMap(ProviderID.init(rawValue:)))
         mainProvider = defaults.string(forKey: Self.mainKey).flatMap(ProviderID.init(rawValue:)) ?? .claudeCode
+        alertsEnabled = defaults.object(forKey: Self.alertsKey) as? Bool ?? true
+        Alerts.requestPermission()
         Task { await refresh() }
         timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.refresh() }
@@ -56,6 +60,13 @@ final class UsageStore {
         }
         now = .now
         lastChecked = checkedAt
+        if alertsEnabled {
+            for provider in ProviderID.allCases {
+                if let snapshot = states[provider]?.snapshot {
+                    Alerts.check(snapshot, now: checkedAt)
+                }
+            }
+        }
         launchAtLogin = LaunchAtLogin.isEnabled
         // A provider that was working and now fails is probably an outage. Retry in a minute.
         // Setup problems, such as a missing CLI or a trust prompt, don't retry on their own.
@@ -90,6 +101,15 @@ final class UsageStore {
             hidden.insert(provider)
         }
         UserDefaults.standard.set(hidden.map(\.rawValue).sorted(), forKey: Self.hiddenKey)
+    }
+
+    func toggleAlerts() {
+        alertsEnabled.toggle()
+        UserDefaults.standard.set(alertsEnabled, forKey: Self.alertsKey)
+    }
+
+    func sendTestAlert() {
+        Alerts.post(title: "Shovels", body: "Test alert. Notifications are working.")
     }
 
     func setMain(_ provider: ProviderID) {

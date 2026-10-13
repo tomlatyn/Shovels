@@ -86,6 +86,15 @@ struct DashboardView: View {
                 }
             }
             VStack(alignment: .leading, spacing: 4) {
+                Text("ALERTS AT 80% AND 95%")
+                    .font(Retro.body(17))
+                    .foregroundStyle(Palette.secondary)
+                TerminalButton(title: store.alertsEnabled ? "ALERTS: ON" : "ALERTS: OFF") {
+                    store.toggleAlerts()
+                }
+                TerminalButton(title: "TEST ALERT") { store.sendTestAlert() }
+            }
+            VStack(alignment: .leading, spacing: 4) {
                 Text("STARTUP")
                     .font(Retro.body(17))
                     .foregroundStyle(Palette.secondary)

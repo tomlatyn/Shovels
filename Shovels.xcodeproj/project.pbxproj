@@ -7,25 +7,26 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A10000000000000000000021 /* ShovelsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* ShovelsApp.swift */; };
-		A10000000000000000000022 /* Usage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* Usage.swift */; };
-		A10000000000000000000023 /* ShovelsPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* ShovelsPaths.swift */; };
-		A10000000000000000000024 /* ClaudeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* ClaudeProvider.swift */; };
-		A10000000000000000000025 /* ClaudeUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* ClaudeUsage.swift */; };
-		A10000000000000000000026 /* CodexUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* CodexUsage.swift */; };
-		A10000000000000000000027 /* CursorUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* CursorUsage.swift */; };
-		A10000000000000000000028 /* AntigravityUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* AntigravityUsage.swift */; };
-		A10000000000000000000029 /* TerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* TerminalSession.swift */; };
-		A1000000000000000000002A /* UsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* UsageStore.swift */; };
-		A1000000000000000000002B /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001A /* DashboardView.swift */; };
-		A1000000000000000000002C /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001B /* Palette.swift */; };
-		A1000000000000000000002D /* ShovelsFonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* ShovelsFonts.swift */; };
-		A1000000000000000000002E /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* LaunchAtLogin.swift */; };
-		A1000000000000000000002F /* ProviderGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* ProviderGlyph.swift */; };
-		A10000000000000000000030 /* MenuBarLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F /* MenuBarLabel.swift */; };
-		A10000000000000000000031 /* Guides.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* Guides.swift */; };
-		A10000000000000000000034 /* PressStart2P-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000032 /* PressStart2P-Regular.ttf */; };
-		A10000000000000000000035 /* VT323-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033 /* VT323-Regular.ttf */; };
+		A10000000000000000000022 /* ShovelsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* ShovelsApp.swift */; };
+		A10000000000000000000023 /* Usage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* Usage.swift */; };
+		A10000000000000000000024 /* ShovelsPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* ShovelsPaths.swift */; };
+		A10000000000000000000025 /* ClaudeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* ClaudeProvider.swift */; };
+		A10000000000000000000026 /* ClaudeUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* ClaudeUsage.swift */; };
+		A10000000000000000000027 /* CodexUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* CodexUsage.swift */; };
+		A10000000000000000000028 /* CursorUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* CursorUsage.swift */; };
+		A10000000000000000000029 /* AntigravityUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* AntigravityUsage.swift */; };
+		A1000000000000000000002A /* TerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* TerminalSession.swift */; };
+		A1000000000000000000002B /* UsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* UsageStore.swift */; };
+		A1000000000000000000002C /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001A /* DashboardView.swift */; };
+		A1000000000000000000002D /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001B /* Palette.swift */; };
+		A1000000000000000000002E /* ShovelsFonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* ShovelsFonts.swift */; };
+		A1000000000000000000002F /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* LaunchAtLogin.swift */; };
+		A10000000000000000000030 /* ProviderGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* ProviderGlyph.swift */; };
+		A10000000000000000000031 /* MenuBarLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F /* MenuBarLabel.swift */; };
+		A10000000000000000000032 /* Guides.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* Guides.swift */; };
+		A10000000000000000000033 /* Alerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* Alerts.swift */; };
+		A10000000000000000000036 /* PressStart2P-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034 /* PressStart2P-Regular.ttf */; };
+		A10000000000000000000037 /* VT323-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035 /* VT323-Regular.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,8 +47,9 @@
 		A1000000000000000000001E /* ProviderGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderGlyph.swift; sourceTree = "<group>"; };
 		A1000000000000000000001F /* MenuBarLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLabel.swift; sourceTree = "<group>"; };
 		A10000000000000000000020 /* Guides.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Guides.swift; sourceTree = "<group>"; };
-		A10000000000000000000032 /* PressStart2P-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = PressStart2P-Regular.ttf; sourceTree = "<group>"; };
-		A10000000000000000000033 /* VT323-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = VT323-Regular.ttf; sourceTree = "<group>"; };
+		A10000000000000000000021 /* Alerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Alerts.swift; sourceTree = "<group>"; };
+		A10000000000000000000034 /* PressStart2P-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = PressStart2P-Regular.ttf; sourceTree = "<group>"; };
+		A10000000000000000000035 /* VT323-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = VT323-Regular.ttf; sourceTree = "<group>"; };
 		A10000000000000000000006 /* Shovels.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Shovels.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -98,8 +100,9 @@
 				A1000000000000000000001E /* ProviderGlyph.swift */,
 				A1000000000000000000001F /* MenuBarLabel.swift */,
 				A10000000000000000000020 /* Guides.swift */,
-				A10000000000000000000032 /* PressStart2P-Regular.ttf */,
-				A10000000000000000000033 /* VT323-Regular.ttf */,
+				A10000000000000000000021 /* Alerts.swift */,
+				A10000000000000000000034 /* PressStart2P-Regular.ttf */,
+				A10000000000000000000035 /* VT323-Regular.ttf */,
 			);
 			path = Shovels;
 			sourceTree = "<group>";
@@ -161,8 +164,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000034 /* PressStart2P-Regular.ttf in Resources */,
-				A10000000000000000000035 /* VT323-Regular.ttf in Resources */,
+				A10000000000000000000036 /* PressStart2P-Regular.ttf in Resources */,
+				A10000000000000000000037 /* VT323-Regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -173,23 +176,24 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000021 /* ShovelsApp.swift in Sources */,
-				A10000000000000000000022 /* Usage.swift in Sources */,
-				A10000000000000000000023 /* ShovelsPaths.swift in Sources */,
-				A10000000000000000000024 /* ClaudeProvider.swift in Sources */,
-				A10000000000000000000025 /* ClaudeUsage.swift in Sources */,
-				A10000000000000000000026 /* CodexUsage.swift in Sources */,
-				A10000000000000000000027 /* CursorUsage.swift in Sources */,
-				A10000000000000000000028 /* AntigravityUsage.swift in Sources */,
-				A10000000000000000000029 /* TerminalSession.swift in Sources */,
-				A1000000000000000000002A /* UsageStore.swift in Sources */,
-				A1000000000000000000002B /* DashboardView.swift in Sources */,
-				A1000000000000000000002C /* Palette.swift in Sources */,
-				A1000000000000000000002D /* ShovelsFonts.swift in Sources */,
-				A1000000000000000000002E /* LaunchAtLogin.swift in Sources */,
-				A1000000000000000000002F /* ProviderGlyph.swift in Sources */,
-				A10000000000000000000030 /* MenuBarLabel.swift in Sources */,
-				A10000000000000000000031 /* Guides.swift in Sources */,
+				A10000000000000000000022 /* ShovelsApp.swift in Sources */,
+				A10000000000000000000023 /* Usage.swift in Sources */,
+				A10000000000000000000024 /* ShovelsPaths.swift in Sources */,
+				A10000000000000000000025 /* ClaudeProvider.swift in Sources */,
+				A10000000000000000000026 /* ClaudeUsage.swift in Sources */,
+				A10000000000000000000027 /* CodexUsage.swift in Sources */,
+				A10000000000000000000028 /* CursorUsage.swift in Sources */,
+				A10000000000000000000029 /* AntigravityUsage.swift in Sources */,
+				A1000000000000000000002A /* TerminalSession.swift in Sources */,
+				A1000000000000000000002B /* UsageStore.swift in Sources */,
+				A1000000000000000000002C /* DashboardView.swift in Sources */,
+				A1000000000000000000002D /* Palette.swift in Sources */,
+				A1000000000000000000002E /* ShovelsFonts.swift in Sources */,
+				A1000000000000000000002F /* LaunchAtLogin.swift in Sources */,
+				A10000000000000000000030 /* ProviderGlyph.swift in Sources */,
+				A10000000000000000000031 /* MenuBarLabel.swift in Sources */,
+				A10000000000000000000032 /* Guides.swift in Sources */,
+				A10000000000000000000033 /* Alerts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
