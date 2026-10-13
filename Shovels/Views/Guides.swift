@@ -7,58 +7,50 @@
 
 import SwiftUI
 
-/// How-to text shown in the dashboard. Each guide is one row; tapping it shows the steps.
+/// Setup steps shown in place of a provider's card until its first successful check.
 struct ConnectGuide: Identifiable {
     let id: String
     let title: String
-    /// One word for the row, such as CONNECTED or SETUP.
-    let badge: String
-    let status: String
     let steps: [String]
+
+    /// Where Shovels looks for each CLI, shown in every guide.
+    private static let whereToInstall = "Shovels finds the CLI through your shell's PATH. If it's installed somewhere unusual, the message above says how to point Shovels at it."
 
     static let all: [ConnectGuide] = [
         ConnectGuide(
             id: "claudeCode",
             title: "CLAUDE CODE",
-            badge: "CONNECTED",
-            status: "Shows session, weekly, and five-hour tokens.",
             steps: [
                 "Install Claude Code, then run 'claude' in Terminal.",
                 "Sign in when it asks. The login stays on this Mac.",
-                "Shovels runs 'claude -p /usage' every five minutes.",
+                whereToInstall,
             ]
         ),
         ConnectGuide(
             id: "codex",
             title: "CODEX",
-            badge: "CONNECTED",
-            status: "Reads limits through the Codex app server.",
             steps: [
                 "Install the Codex CLI.",
                 "Run 'codex login' in Terminal and sign in with the ChatGPT account you want to track.",
-                "Shovels asks Codex for its rate limits every five minutes.",
+                whereToInstall,
             ]
         ),
         ConnectGuide(
             id: "antigravity",
             title: "ANTIGRAVITY",
-            badge: "CONNECTED",
-            status: "Reads the agy CLI's /usage screen.",
             steps: [
-                "Install the agy command line from Antigravity.",
-                "Run 'agy' in Terminal once and sign in when it asks.",
-                "Shovels opens agy in the background to read /usage. Each check takes about 20 seconds.",
+                "Install the agy command line from Antigravity, run 'agy' in Terminal, and sign in.",
+                "Run 'agy' in Terminal from ~/Library/Application Support/Shovels/antigravity-workspace. Choose Yes when it asks to trust the folder. Shovels never answers that question for you.",
+                whereToInstall,
             ]
         ),
         ConnectGuide(
             id: "cursor",
             title: "CURSOR",
-            badge: "SETUP",
-            status: "Needs a one-time trust step.",
             steps: [
-                "Install the Cursor agent command line.",
-                "Run 'agent login' in Terminal and sign in.",
+                "Install the Cursor agent command line, then run 'agent login' in Terminal and sign in.",
                 "Run 'agent' in Terminal from ~/Library/Application Support/Shovels/cursor-workspace. Choose Trust when it asks. Shovels never answers that question for you.",
+                whereToInstall,
             ]
         ),
     ]

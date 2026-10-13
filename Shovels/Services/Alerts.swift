@@ -19,34 +19,73 @@ enum Alerts {
     }
 
     /// Sends alerts for windows that crossed a threshold since the last check.
-    /// Sent keys are "provider|window|resetEpoch|threshold". Expired keys are dropped.
+    /// Sent keys are "provider|window|resetEpoch|threshold". A key matches any reset time within
+    /// `UsageHistory.cycleTolerance`, because some providers report the reset time only to the minute.
+    /// Expired keys are dropped.
     static func check(_ snapshot: ProviderSnapshot, now: Date, history: [UsageSample]) {
         let defaults = UserDefaults.standard
-        var sent = Set(defaults.stringArray(forKey: sentKey) ?? [])
-        sent = sent.filter { key in
-            let parts = key.split(separator: "|")
-            guard parts.count == 4, let epoch = Double(parts[2]) else { return false }
-            return epoch > now.timeIntervalSince1970
-        }
+        let stored = (defaults.stringArray(forKey: sentKey) ?? []).compactMap(SentAlert.init(key:))
+        let (windows, sent) = due(snapshot, now: now, sent: stored)
 
+        for window in windows {
+            guard let used = window.usedPercent, let resets = window.resetsAt else { continue }
+            let untilReset = resets.timeIntervalSince(now)
+            var body = "\(window.title) limit at \(Int(used))%. Resets in \(Formatting.duration(untilReset))."
+            let series = UsageHistory.series(history, provider: snapshot.provider, window: window.key, resetsAt: resets)
+            if let runway = UsageHistory.runway(series, window: window, now: now), runway < untilReset {
+                body += " At this pace: full in \(Formatting.duration(runway))."
+            }
+            let name: [String] = [snapshot.provider.displayName.capitalized, window.group, window.title].compactMap { $0 }
+            post(title: name.joined(separator: " · "), body: body)
+        }
+        defaults.set(sent.map(\.key), forKey: sentKey)
+    }
+
+    /// The windows that need an alert now, and the updated list of sent alerts. Sends nothing.
+    static func due(_ snapshot: ProviderSnapshot, now: Date, sent stored: [SentAlert]) -> (windows: [UsageWindow], sent: [SentAlert]) {
+        let tolerance = UsageHistory.cycleTolerance
+        var sent = stored.filter { $0.resetsAt + tolerance > now.timeIntervalSince1970 }
+        var windows: [UsageWindow] = []
         for window in snapshot.windows {
             guard let used = window.usedPercent, let resets = window.resetsAt, resets > now else { continue }
             let crossed = thresholds.filter { Double($0) <= used }
             guard let highest = crossed.first else { continue }
-            let base = "\(snapshot.provider.rawValue)|\(window.title)|\(Int(resets.timeIntervalSince1970))"
-            if sent.contains("\(base)|\(highest)") { continue }
-            // Mark every crossed threshold, so a jump from under 80% to over 95% sends one alert, not two.
-            for threshold in crossed { sent.insert("\(base)|\(threshold)") }
-
-            let untilReset = resets.timeIntervalSince(now)
-            var body = "\(window.title) limit at \(Int(used))%. Resets in \(Formatting.duration(untilReset))."
-            let series = UsageHistory.series(history, provider: snapshot.provider, title: window.title, resetsAt: resets)
-            if let runway = UsageHistory.runway(series, now: now), runway < untilReset {
-                body += " At this pace: full in \(Formatting.duration(runway))."
+            let epoch = resets.timeIntervalSince1970
+            let alreadySent = sent.contains {
+                $0.provider == snapshot.provider.rawValue && $0.window == window.key
+                    && $0.threshold == highest && abs($0.resetsAt - epoch) < tolerance
             }
-            post(title: "\(snapshot.provider.displayName.capitalized) · \(window.title)", body: body)
+            if alreadySent { continue }
+            // Mark every crossed threshold, so a jump from under 80% to over 95% sends one alert, not two.
+            for threshold in crossed {
+                sent.append(SentAlert(provider: snapshot.provider.rawValue, window: window.key, resetsAt: epoch, threshold: threshold))
+            }
+            windows.append(window)
         }
-        defaults.set(Array(sent), forKey: sentKey)
+        return (windows, sent)
+    }
+
+    /// One alert already sent, stored as "provider|window|resetEpoch|threshold".
+    struct SentAlert: Equatable {
+        let provider: String
+        let window: String
+        let resetsAt: Double
+        let threshold: Int
+
+        init(provider: String, window: String, resetsAt: Double, threshold: Int) {
+            self.provider = provider
+            self.window = window
+            self.resetsAt = resetsAt
+            self.threshold = threshold
+        }
+
+        init?(key: String) {
+            let parts = key.split(separator: "|", omittingEmptySubsequences: false)
+            guard parts.count == 4, let epoch = Double(parts[2]), let threshold = Int(parts[3]) else { return nil }
+            self.init(provider: String(parts[0]), window: String(parts[1]), resetsAt: epoch, threshold: threshold)
+        }
+
+        var key: String { "\(provider)|\(window)|\(Int(resetsAt))|\(threshold)" }
     }
 
     /// Tells you a nearly full window has reset.

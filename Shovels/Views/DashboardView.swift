@@ -22,7 +22,7 @@ struct DashboardView: View {
                 }
                 .foregroundStyle(Palette.phosphor)
                 Spacer()
-                Text(store.lastChecked.map { "Checked " + $0.formatted(.relative(presentation: .named)) } ?? "Checking…")
+                Text(checkedLabel)
                     .font(Retro.body(18))
                     .foregroundStyle(Palette.secondary)
             }
@@ -51,6 +51,15 @@ struct DashboardView: View {
         .background(Palette.panel)
         // Closing the window returns to the dashboard, not settings.
         .onDisappear { showingSettings = false }
+    }
+
+    /// "Checked 3 minutes ago", measured against the store's clock so it keeps moving while the window is open.
+    private var checkedLabel: String {
+        guard let lastChecked = store.lastChecked else { return "Checking…" }
+        if store.now.timeIntervalSince(lastChecked) < 60 { return "Checked just now" }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return "Checked " + formatter.localizedString(for: lastChecked, relativeTo: store.now)
     }
 
     private var footer: some View {
@@ -114,6 +123,7 @@ struct DashboardView: View {
                     Text(error)
                         .font(Retro.body(17))
                         .foregroundStyle(Palette.alert)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -123,9 +133,9 @@ struct DashboardView: View {
     }
 }
 
-/// Not connected: no reading yet, and the problem is setup, not an outage.
+/// Not connected: no reading yet, and the problem is setup, not a timeout or an outage.
 func isUnconnected(_ state: ProviderState) -> Bool {
-    state.snapshot == nil && state.error != nil && !state.outage
+    state.snapshot == nil && state.error != nil && state.needsSetup
 }
 
 struct ProviderCard: View {
@@ -168,15 +178,20 @@ struct ProviderCard: View {
             }
 
             if let snapshot, hasWindows {
-                ForEach(snapshot.windows, id: \.title) { window in
+                ForEach(Array(snapshot.windows.enumerated()), id: \.element.key) { index, window in
+                    // A provider with quota groups, such as Antigravity, gets a heading before each group.
+                    if let group = window.group, index == 0 || snapshot.windows[index - 1].group != group {
+                        Text(group)
+                            .font(Retro.body(17))
+                            .foregroundStyle(Palette.secondary)
+                    }
                     WindowRow(window: window, accent: accent, now: now,
-                              series: store.series(for: provider, window: window),
                               runway: store.runway(for: provider, window: window))
                 }
             } else if let error = state.error {
                 Text(error)
-                    .font(state.outage ? Retro.body(17) : Retro.body(20))
-                    .foregroundStyle(state.outage ? Palette.secondary : Palette.alert)
+                    .font(state.needsSetup ? Retro.body(20) : Retro.body(17))
+                    .foregroundStyle(state.needsSetup ? Palette.alert : Palette.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("Checking usage…")
@@ -227,7 +242,6 @@ struct WindowRow: View {
     let window: UsageWindow
     let accent: Color
     let now: Date
-    let series: [UsageSample]
     let runway: TimeInterval?
 
     /// Names that say how long the window is, so "Session" never has to mean three things.
@@ -238,12 +252,6 @@ struct WindowRow: View {
         case 43200: "Monthly"
         default: window.title
         }
-    }
-
-    /// A sparkline needs at least 10 minutes of readings. Two points look like noise.
-    private var hasEnoughHistory: Bool {
-        guard series.count >= 3, let first = series.first, let last = series.last else { return false }
-        return last.at - first.at >= 600
     }
 
     /// Shown when the window would fill before it resets.
@@ -272,10 +280,6 @@ struct WindowRow: View {
                 .font(Retro.body(17))
                 .foregroundStyle(Palette.secondary)
                 .padding(.leading, 90)
-            if hasEnoughHistory {
-                Sparkline(values: series.map(\.used), color: accent)
-                    .padding(.leading, 90)
-            }
             if let runwayText {
                 Text(runwayText)
                     .font(Retro.body(17))
@@ -305,7 +309,7 @@ struct WindowRow: View {
 
 }
 
-/// Ten pixel cells, filled to the percentage. Drawn as shapes, so the bar doesn't depend on a font.
+/// Twenty pixel cells, filled to the percentage. Drawn as shapes, so the bar doesn't depend on a font.
 struct CellBar: View {
     let percent: Double?
     let color: Color

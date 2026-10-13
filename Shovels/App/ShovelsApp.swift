@@ -13,6 +13,14 @@ struct ShovelsApp: App {
 
     init() {
         ShovelsFonts.register()
+        // A CLI that exits while Shovels writes to it must not take the app down with SIGPIPE.
+        signal(SIGPIPE, SIG_IGN)
+        // Quitting mid-check would otherwise leave the CLIs running.
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification, object: nil, queue: nil
+        ) { _ in
+            ChildProcess.stopAll()
+        }
     }
 
     var body: some Scene {
