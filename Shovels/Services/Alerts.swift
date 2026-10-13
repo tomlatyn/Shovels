@@ -5,6 +5,7 @@
 //  Created by Tomas Latyn on 13.10.26.
 //
 
+import AppKit
 import Foundation
 import UserNotifications
 
@@ -41,6 +42,29 @@ enum Alerts {
             )
         }
         defaults.set(Array(sent), forKey: sentKey)
+    }
+
+    /// Sends a test alert. Asks for permission first if macOS hasn't decided yet,
+    /// and opens Notifications settings if it was turned off. Returns a line for the settings screen.
+    static func test() async -> String {
+        let center = UNUserNotificationCenter.current()
+        var settings = await center.notificationSettings()
+        if settings.authorizationStatus == .notDetermined {
+            _ = try? await center.requestAuthorization(options: [.alert, .sound])
+            settings = await center.notificationSettings()
+        }
+        switch settings.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            post(title: "Shovels", body: "Test alert. Notifications are working.")
+            return "Test alert sent."
+        case .denied:
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.notifications") {
+                NSWorkspace.shared.open(url)
+            }
+            return "Notifications are off for Shovels. Turn them on in System Settings › Notifications."
+        default:
+            return "Allow notifications for Shovels when macOS asks, then test again."
+        }
     }
 
     static func post(title: String, body: String) {

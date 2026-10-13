@@ -96,6 +96,12 @@ struct DashboardView: View {
                     store.toggleAlerts()
                 }
                 TerminalButton(title: "TEST ALERT") { store.sendTestAlert() }
+                if let note = store.alertNote {
+                    Text(note)
+                        .font(Retro.body(17))
+                        .foregroundStyle(Palette.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text("STARTUP")

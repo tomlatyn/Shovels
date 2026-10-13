@@ -25,6 +25,7 @@ final class UsageStore {
     private(set) var now: Date = .now
     private(set) var launchAtLogin = false
     private(set) var alertsEnabled: Bool
+    private(set) var alertNote: String?
     private(set) var loginError: String?
     private var timer: Timer?
     private var retryTask: Task<Void, Never>?
@@ -116,7 +117,7 @@ final class UsageStore {
     }
 
     func sendTestAlert() {
-        Alerts.post(title: "Shovels", body: "Test alert. Notifications are working.")
+        Task { alertNote = await Alerts.test() }
     }
 
     func setMain(_ provider: ProviderID) {
