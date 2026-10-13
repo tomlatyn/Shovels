@@ -177,8 +177,25 @@ struct WindowRow: View {
 
     private var resetLabel: String {
         guard let resetsAt = window.resetsAt else { return "reset time unknown" }
-        if resetsAt <= now { return "Reset. Checks again on refresh." }
-        return "Resets " + resetsAt.formatted(.relative(presentation: .named))
+        let remaining = resetsAt.timeIntervalSince(now)
+        if remaining <= 0 { return "Reset. Checks again on refresh." }
+        return "Resets in " + Self.duration(remaining)
+    }
+
+    /// Days and hours for long waits, hours and minutes for shorter ones.
+    static func duration(_ seconds: TimeInterval) -> String {
+        let minutes = Int(seconds / 60)
+        let days = minutes / 1440
+        let hours = (minutes % 1440) / 60
+        let rest = minutes % 60
+        if days > 0 {
+            return hours > 0 ? "\(days) \(days == 1 ? "day" : "days") \(hours) \(hours == 1 ? "hour" : "hours")"
+                             : "\(days) \(days == 1 ? "day" : "days")"
+        }
+        if hours > 0 {
+            return rest > 0 ? "\(hours) \(hours == 1 ? "hour" : "hours") \(rest) min" : "\(hours) \(hours == 1 ? "hour" : "hours")"
+        }
+        return "\(max(rest, 1)) min"
     }
 }
 

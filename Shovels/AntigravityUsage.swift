@@ -49,7 +49,9 @@ enum AntigravityUsage {
         guard !windows.isEmpty else {
             throw AntigravityUsageError.noUsage("")
         }
-        return ProviderSnapshot(provider: .antigravity, plan: nil, windows: windows, asOf: now, tokensLast5h: nil)
+        // The plan appears as "(Google AI Pro)" in the command menu. Read it when it's there.
+        let plan = screen.firstMatch(of: #/\(Google AI (\w+)\)/#).map { String($0.1).uppercased() }
+        return ProviderSnapshot(provider: .antigravity, plan: plan, windows: windows, asOf: now, tokensLast5h: nil)
     }
 
     private static func window(title: String, minutes: Int, remaining: Double,
