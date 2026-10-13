@@ -26,6 +26,7 @@ final class UsageStore {
     private(set) var launchAtLogin = false
     private(set) var alertsEnabled: Bool
     private(set) var alertNote: String?
+    private(set) var history: [UsageSample]
     private(set) var loginError: String?
     private var timer: Timer?
     private var retryTask: Task<Void, Never>?
@@ -35,6 +36,7 @@ final class UsageStore {
         hidden = Set((defaults.stringArray(forKey: Self.hiddenKey) ?? []).compactMap(ProviderID.init(rawValue:)))
         mainProvider = defaults.string(forKey: Self.mainKey).flatMap(ProviderID.init(rawValue:)) ?? .claudeCode
         alertsEnabled = defaults.object(forKey: Self.alertsKey) as? Bool ?? true
+        history = UsageHistory.load()
         Alerts.requestPermission()
         Task { await refresh() }
         timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
@@ -68,11 +70,15 @@ final class UsageStore {
         }
         now = .now
         lastChecked = checkedAt
+        // Only fresh readings go into history and alerts. A failed check reuses an old snapshot, which would repeat it.
+        let freshSnapshots = fresh.values.compactMap(\.snapshot)
+        let resetEvents = UsageHistory.record(freshSnapshots, now: checkedAt, into: &history)
         if alertsEnabled {
-            for provider in ProviderID.allCases {
-                if let snapshot = states[provider]?.snapshot {
-                    Alerts.check(snapshot, now: checkedAt)
-                }
+            for snapshot in freshSnapshots {
+                Alerts.check(snapshot, now: checkedAt, history: history)
+            }
+            for event in resetEvents {
+                Alerts.reset(event)
             }
         }
         launchAtLogin = LaunchAtLogin.isEnabled
@@ -118,6 +124,17 @@ final class UsageStore {
 
     func sendTestAlert() {
         Task { alertNote = await Alerts.test() }
+    }
+
+    /// Samples for one window's current cycle, for its sparkline.
+    func series(for provider: ProviderID, window: UsageWindow) -> [UsageSample] {
+        guard let resets = window.resetsAt else { return [] }
+        return UsageHistory.series(history, provider: provider, title: window.title, resetsAt: resets)
+    }
+
+    /// Estimated time until the window is full at its recent pace.
+    func runway(for provider: ProviderID, window: UsageWindow) -> TimeInterval? {
+        UsageHistory.runway(series(for: provider, window: window), now: now)
     }
 
     func setMain(_ provider: ProviderID) {

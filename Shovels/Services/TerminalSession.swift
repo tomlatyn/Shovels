@@ -33,6 +33,7 @@ enum TerminalSession {
         startupSeconds: Double,
         replySeconds: Double,
         blocked: (String) -> String?,
+        ready: ((String) -> Bool)? = nil,
         replyUntil: ((String) -> Bool)? = nil
     ) throws -> String {
         let master = posix_openpt(O_RDWR | O_NOCTTY)
@@ -80,6 +81,18 @@ enum TerminalSession {
         if let message = blocked(startText) {
             send(master, Array("\u{3}".utf8))
             throw TerminalSessionError.blockedByPrompt(message)
+        }
+        if let ready, !ready(startText) {
+            // Keys are typed only once the CLI shows its prompt. A trust prompt that appears first stops everything.
+            let deadline = Date().addingTimeInterval(startupSeconds)
+            while Date() < deadline && !ready(clean(screen)) {
+                if let message = blocked(clean(screen)) {
+                    send(master, Array("\u{3}".utf8))
+                    throw TerminalSessionError.blockedByPrompt(message)
+                }
+                pump(master, for: 0.5, into: &screen)
+            }
+            guard ready(clean(screen)) else { throw TerminalSessionError.couldNotStart }
         }
 
         for byte in command.utf8 {

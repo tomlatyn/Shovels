@@ -85,7 +85,8 @@ enum CodexUsage {
     private static func send(_ message: [String: Any], to handle: FileHandle) {
         guard var data = try? JSONSerialization.data(withJSONObject: message) else { return }
         data.append(0x0A)
-        handle.write(data)
+        // try? because a closed pipe must not crash the app. The check then reports no reply.
+        try? handle.write(contentsOf: data)
     }
 
     /// Reads the primary and secondary windows from a `rateLimits` reply.

@@ -59,6 +59,7 @@ enum CursorUsage {
                 blocked: { text in
                     text.contains("Trust this workspace") || text.contains("Workspace Trust Required") ? trustMessage : nil
                 },
+                ready: { $0.contains("Plan, search") },
                 replyUntil: { text in text.contains("Usage •") || text.contains("Failed to load usage data") }
             )
             return try parse(screen, now: now)

@@ -20,6 +20,22 @@ enum ClaudeProvider {
         )
     }
 
+    /// The last `maxBytes` of a log, so a very large file doesn't load whole on every refresh.
+    /// The first line is dropped when the read starts mid-line.
+    static func tail(of url: URL, maxBytes: Int) -> String? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        guard let size = try? handle.seekToEnd() else { return nil }
+        let start = size > UInt64(maxBytes) ? size - UInt64(maxBytes) : 0
+        try? handle.seek(toOffset: start)
+        guard let data = try? handle.readToEnd() else { return nil }
+        var text = String(decoding: data, as: UTF8.self)
+        if start > 0, let newline = text.firstIndex(of: "\n") {
+            text = String(text[text.index(after: newline)...])
+        }
+        return text
+    }
+
     /// Sums input and output tokens from assistant messages in the last five hours.
     /// Claude Code writes the same message more than once, so each message id is counted once.
     static func tokensLast5h(now: Date) -> Int? {
@@ -37,7 +53,7 @@ enum ClaudeProvider {
         for case let url as URL in files where url.pathExtension == "jsonl" {
             let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
             guard let modified, modified >= cutoff,
-                  let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+                  let text = tail(of: url, maxBytes: 32 * 1024 * 1024) else { continue }
 
             for line in text.split(separator: "\n") where line.contains("\"usage\"") {
                 guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],

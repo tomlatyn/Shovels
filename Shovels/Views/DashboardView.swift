@@ -33,7 +33,7 @@ struct DashboardView: View {
                     if isUnconnected(store.state(for: provider)), let guide = ConnectGuide.for(provider) {
                         GuideCard(guide: guide, message: store.state(for: provider).error ?? "")
                     } else {
-                        ProviderCard(provider: provider, state: store.state(for: provider), now: store.now,
+                        ProviderCard(provider: provider, state: store.state(for: provider), now: store.now, store: store,
                                      isMain: store.mainProvider == provider)
                     }
                 }
@@ -132,6 +132,7 @@ struct ProviderCard: View {
     let provider: ProviderID
     let state: ProviderState
     let now: Date
+    let store: UsageStore
     var isMain = false
 
     private var snapshot: ProviderSnapshot? { state.snapshot }
@@ -168,7 +169,9 @@ struct ProviderCard: View {
 
             if let snapshot, hasWindows {
                 ForEach(snapshot.windows, id: \.title) { window in
-                    WindowRow(window: window, accent: accent, now: now)
+                    WindowRow(window: window, accent: accent, now: now,
+                              series: store.series(for: provider, window: window),
+                              runway: store.runway(for: provider, window: window))
                 }
             } else if let error = state.error {
                 Text(error)
@@ -224,6 +227,8 @@ struct WindowRow: View {
     let window: UsageWindow
     let accent: Color
     let now: Date
+    let series: [UsageSample]
+    let runway: TimeInterval?
 
     /// Names that say how long the window is, so "Session" never has to mean three things.
     private var displayName: String {
@@ -233,6 +238,13 @@ struct WindowRow: View {
         case 43200: "Monthly"
         default: window.title
         }
+    }
+
+    /// Shown when the window would fill before it resets.
+    private var runwayText: String? {
+        guard let runway, percent != nil, let resetsAt = window.resetsAt else { return nil }
+        guard runway < resetsAt.timeIntervalSince(now) else { return nil }
+        return "At this pace: full in \(Formatting.duration(runway))"
     }
 
     private var expired: Bool { (window.resetsAt ?? .distantFuture) <= now }
@@ -254,6 +266,16 @@ struct WindowRow: View {
                 .font(Retro.body(17))
                 .foregroundStyle(Palette.secondary)
                 .padding(.leading, 90)
+            if series.count > 1 {
+                Sparkline(values: series.map(\.used), color: accent)
+                    .padding(.leading, 90)
+            }
+            if let runwayText {
+                Text(runwayText)
+                    .font(Retro.body(17))
+                    .foregroundStyle(Palette.alert)
+                    .padding(.leading, 90)
+            }
         }
     }
 
@@ -272,24 +294,9 @@ struct WindowRow: View {
         guard let resetsAt = window.resetsAt else { return "reset time unknown" }
         let remaining = resetsAt.timeIntervalSince(now)
         if remaining <= 0 { return "Reset. Checks again on refresh." }
-        return "Resets in " + Self.duration(remaining)
+        return "Resets in " + Formatting.duration(remaining)
     }
 
-    /// Days and hours for long waits, hours and minutes for shorter ones.
-    static func duration(_ seconds: TimeInterval) -> String {
-        let minutes = Int(seconds / 60)
-        let days = minutes / 1440
-        let hours = (minutes % 1440) / 60
-        let rest = minutes % 60
-        if days > 0 {
-            return hours > 0 ? "\(days) \(days == 1 ? "day" : "days") \(hours) \(hours == 1 ? "hour" : "hours")"
-                             : "\(days) \(days == 1 ? "day" : "days")"
-        }
-        if hours > 0 {
-            return rest > 0 ? "\(hours) \(hours == 1 ? "hour" : "hours") \(rest) min" : "\(hours) \(hours == 1 ? "hour" : "hours")"
-        }
-        return "\(max(rest, 1)) min"
-    }
 }
 
 /// Ten pixel cells, filled to the percentage. Drawn as shapes, so the bar doesn't depend on a font.

@@ -65,11 +65,3 @@ struct ProviderState: Sendable, Equatable {
     /// True when the provider's service is down, as opposed to a setup problem. Shown in a calmer style.
     var outage: Bool = false
 }
-
-enum Bar {
-    /// Ten-cell text bar, such as "█████░░░░░".
-    static func text(percent: Double, cells: Int = 10) -> String {
-        let filled = min(cells, max(0, Int((percent / 100 * Double(cells)).rounded(.down))))
-        return String(repeating: "█", count: filled) + String(repeating: "░", count: cells - filled)
-    }
-}

@@ -9,7 +9,7 @@ import AppKit
 import Foundation
 import UserNotifications
 
-/// Notifications when a window reaches 80% or 95%. Each threshold fires once per window.
+/// Notifications for limits: 80% and 95% thresholds, and resets after a nearly full window.
 enum Alerts {
     static let thresholds: [Int] = [95, 80]
     private static let sentKey = "alertsSent"
@@ -19,12 +19,13 @@ enum Alerts {
     }
 
     /// Sends alerts for windows that crossed a threshold since the last check.
-    /// Sent keys are stored as "provider|window|resetEpoch|threshold", and expired ones are dropped.
-    static func check(_ snapshot: ProviderSnapshot, now: Date) {
+    /// Sent keys are "provider|window|resetEpoch|threshold". Expired keys are dropped.
+    static func check(_ snapshot: ProviderSnapshot, now: Date, history: [UsageSample]) {
         let defaults = UserDefaults.standard
         var sent = Set(defaults.stringArray(forKey: sentKey) ?? [])
         sent = sent.filter { key in
-            guard let epoch = Double(key.split(separator: "|")[2]) else { return false }
+            let parts = key.split(separator: "|")
+            guard parts.count == 4, let epoch = Double(parts[2]) else { return false }
             return epoch > now.timeIntervalSince1970
         }
 
@@ -36,12 +37,24 @@ enum Alerts {
             if sent.contains("\(base)|\(highest)") { continue }
             // Mark every crossed threshold, so a jump from under 80% to over 95% sends one alert, not two.
             for threshold in crossed { sent.insert("\(base)|\(threshold)") }
-            post(
-                title: snapshot.provider.displayName.capitalized,
-                body: "\(window.title) limit at \(Int(used))%. Resets in \(WindowRow.duration(resets.timeIntervalSince(now)))."
-            )
+
+            let untilReset = resets.timeIntervalSince(now)
+            var body = "\(window.title) limit at \(Int(used))%. Resets in \(Formatting.duration(untilReset))."
+            let series = UsageHistory.series(history, provider: snapshot.provider, title: window.title, resetsAt: resets)
+            if let runway = UsageHistory.runway(series, now: now), runway < untilReset {
+                body += " At this pace: full in \(Formatting.duration(runway))."
+            }
+            post(title: "\(snapshot.provider.displayName.capitalized) · \(window.title)", body: body)
         }
         defaults.set(Array(sent), forKey: sentKey)
+    }
+
+    /// Tells you a nearly full window has reset.
+    static func reset(_ event: ResetEvent) {
+        post(
+            title: "\(event.provider.displayName.capitalized) · \(event.window)",
+            body: "\(event.window) window reset. You have full capacity again."
+        )
     }
 
     /// Sends a test alert. Asks for permission first if macOS hasn't decided yet,
