@@ -19,8 +19,12 @@ struct DashboardView: View {
                     .font(Retro.body(18))
                     .foregroundStyle(Palette.secondary)
             }
-            ForEach(ProviderID.allCases, id: \.self) { provider in
+            ForEach(store.visibleProviders, id: \.self) { provider in
                 ProviderCard(provider: provider, state: store.state(for: provider), now: store.now)
+            }
+            if store.visibleProviders.isEmpty {
+                Text("All providers are hidden. Turn one on below.")
+                    .foregroundStyle(Palette.secondary)
             }
             if showingGuides {
                 GuidesView()
@@ -35,12 +39,32 @@ struct DashboardView: View {
     }
 
     private var footer: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 TerminalButton(title: store.isChecking ? "CHECKING" : "REFRESH") { store.refreshNow() }
                 TerminalButton(title: showingGuides ? "HIDE GUIDES" : "GUIDES") { showingGuides.toggle() }
                 Spacer()
                 TerminalButton(title: "QUIT") { NSApplication.shared.terminate(nil) }
+            }
+            HStack(spacing: 6) {
+                Text("SHOW")
+                    .font(Retro.body(17))
+                    .foregroundStyle(Palette.secondary)
+                ForEach(ProviderID.allCases, id: \.self) { provider in
+                    TerminalButton(title: provider.shortName, filled: !store.hidden.contains(provider)) {
+                        store.toggleVisible(provider)
+                    }
+                }
+            }
+            HStack(spacing: 6) {
+                Text("MENU")
+                    .font(Retro.body(17))
+                    .foregroundStyle(Palette.secondary)
+                ForEach(ProviderID.allCases, id: \.self) { provider in
+                    TerminalButton(title: provider.shortName, filled: store.mainProvider == provider) {
+                        store.setMain(provider)
+                    }
+                }
             }
             TerminalButton(title: store.launchAtLogin ? "OPEN AT LOGIN: ON" : "OPEN AT LOGIN: OFF") {
                 store.setLaunchAtLogin(!store.launchAtLogin)
@@ -122,6 +146,7 @@ struct ProviderCard: View {
 
 struct TerminalButton: View {
     let title: String
+    var filled = false
     let action: () -> Void
 
     var body: some View {
@@ -129,9 +154,10 @@ struct TerminalButton: View {
             Text(title)
                 .font(Retro.body(18))
                 .fixedSize()
-                .foregroundStyle(Palette.phosphor)
+                .foregroundStyle(filled ? Palette.panel : Palette.phosphor)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
+                .background(filled ? Palette.phosphor : Color.clear)
                 .overlay(Rectangle().stroke(Palette.phosphor, lineWidth: 1))
         }
         .buttonStyle(.plain)

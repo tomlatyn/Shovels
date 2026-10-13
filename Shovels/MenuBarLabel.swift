@@ -1,18 +1,17 @@
 import SwiftUI
 
-/// Menu bar item: each provider's glyph, then its percentage.
+/// Menu bar item: the main provider's glyph and percentage. Falls back to the shovel when nothing is on.
 struct MenuBarLabel: View {
     let store: UsageStore
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(nsImage: ProviderGlyph.image(rows: ProviderGlyph.shovel))
-            ForEach(UsageStore.menuProviders, id: \.self) { provider in
-                HStack(spacing: 3) {
-                    Image(nsImage: ProviderGlyph.image(for: provider))
-                    Text(store.menuText(for: provider))
-                        .font(Retro.body(17))
-                }
+        HStack(spacing: 4) {
+            if let provider = store.menuProvider {
+                Image(nsImage: ProviderGlyph.image(for: provider))
+                Text(store.menuText(for: provider))
+                    .font(Retro.body(17))
+            } else {
+                Image(nsImage: ProviderGlyph.image(rows: ProviderGlyph.shovel))
             }
         }
         .help(store.menuBarHelp)

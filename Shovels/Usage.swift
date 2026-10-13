@@ -1,6 +1,6 @@
 import Foundation
 
-enum ProviderID: Sendable, CaseIterable {
+enum ProviderID: String, Sendable, CaseIterable {
     case claudeCode
     case codex
     case antigravity

@@ -4,10 +4,14 @@ import Observation
 @MainActor
 @Observable
 final class UsageStore {
-    /// Providers shown in the menu bar, in order.
-    static let menuProviders: [ProviderID] = ProviderID.allCases
+    private static let hiddenKey = "hiddenProviders"
+    private static let mainKey = "mainProvider"
 
     private(set) var states: [ProviderID: ProviderState] = [:]
+    /// Providers you've hidden from the dashboard and the menu bar.
+    private(set) var hidden: Set<ProviderID>
+    /// The provider whose percentage shows in the menu bar.
+    private(set) var mainProvider: ProviderID
     private(set) var isChecking = false
     private(set) var now: Date = .now
     private(set) var launchAtLogin = false
@@ -16,6 +20,9 @@ final class UsageStore {
     private var retryTask: Task<Void, Never>?
 
     init() {
+        let defaults = UserDefaults.standard
+        hidden = Set((defaults.stringArray(forKey: Self.hiddenKey) ?? []).compactMap(ProviderID.init(rawValue:)))
+        mainProvider = defaults.string(forKey: Self.mainKey).flatMap(ProviderID.init(rawValue:)) ?? .claudeCode
         Task { await refresh() }
         timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.refresh() }
@@ -62,6 +69,30 @@ final class UsageStore {
             guard !Task.isCancelled else { return }
             await self?.refresh()
         }
+    }
+
+    /// Providers that are on, in display order.
+    var visibleProviders: [ProviderID] {
+        ProviderID.allCases.filter { !hidden.contains($0) }
+    }
+
+    /// The provider the menu bar shows: the main one, or the first visible one if the main one is hidden.
+    var menuProvider: ProviderID? {
+        hidden.contains(mainProvider) ? visibleProviders.first : mainProvider
+    }
+
+    func toggleVisible(_ provider: ProviderID) {
+        if hidden.contains(provider) {
+            hidden.remove(provider)
+        } else {
+            hidden.insert(provider)
+        }
+        UserDefaults.standard.set(hidden.map(\.rawValue).sorted(), forKey: Self.hiddenKey)
+    }
+
+    func setMain(_ provider: ProviderID) {
+        mainProvider = provider
+        UserDefaults.standard.set(provider.rawValue, forKey: Self.mainKey)
     }
 
     func refreshNow() {
@@ -125,7 +156,7 @@ final class UsageStore {
 
     /// Tooltip for the menu bar item. Says why there's no number yet.
     var menuBarHelp: String {
-        ProviderID.allCases.map { provider in
+        visibleProviders.map { provider in
             if menuPercent(for: provider) != nil {
                 return "\(provider.displayName.capitalized): usage shown"
             }
