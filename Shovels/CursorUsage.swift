@@ -2,12 +2,16 @@ import Foundation
 
 enum CursorUsageError: Error, Sendable {
     case notInstalled
+    /// Cursor's usage service answered with an error. This is an outage on Cursor's side, not a setup problem.
+    case unavailable
     case noUsage(String)
 
     var message: String {
         switch self {
         case .notInstalled:
             "Cursor's agent CLI isn't installed. Install it, then sign in with 'agent login' in Terminal."
+        case .unavailable:
+            "Cursor's usage service is down right now. Shovels retries on its own. Status: cursor.com/dashboard?tab=usage"
         case .noUsage(let detail):
             detail
         }
@@ -54,6 +58,9 @@ enum CursorUsage {
 
     /// Parsed once a real /usage screen has been captured. Until then this reports that it isn't read yet.
     static func parse(_ screen: String, now: Date) throws -> ProviderSnapshot {
-        throw CursorUsageError.noUsage("Cursor's usage screen isn't read yet.")
+        if screen.contains("Failed to load usage data") {
+            throw CursorUsageError.unavailable
+        }
+        throw CursorUsageError.noUsage("Cursor's usage screen came back in a format Shovels doesn't read yet.")
     }
 }
